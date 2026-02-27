@@ -200,38 +200,43 @@ Python 3.11+
 
 ## 개발 페이즈
 
-### Phase 0: 스캐폴딩 + 하드웨어 연결 (1일)
-- [ ] 디렉토리 구조 생성, `requirements.txt` 작성
-- [ ] `pynvml` 연결 — RTX 4070 Super VRAM/온도/전력 읽기 확인
-- [ ] `psutil` 연결 — RAM/CPU 읽기 확인
-- [ ] Ollama Python 클라이언트 — `ollama.chat()` 정상 동작 확인
-- [ ] SQLite 스키마 생성 (`runs`, `results`, `hw_samples` 테이블)
+### Phase 0: 스캐폴딩 + 하드웨어 연결 (1일) ✅
+- [x] 디렉토리 구조 생성, `requirements.txt` 작성
+- [x] `pynvml` 연결 — RTX 4070 Super VRAM/온도/전력 읽기 확인
+- [x] `psutil` 연결 — RAM/CPU 읽기 확인
+- [x] Ollama Python 클라이언트 — `ollama.chat()` 정상 동작 확인
+- [x] SQLite 스키마 생성 (`runs`, `results`, `hw_samples` 테이블)
 
-### Phase 1: 핵심 파이프라인 (3–4일)
-- [ ] `profiler.py` — 백그라운드 스레드로 10ms 간격 샘플링, 집계 반환
-- [ ] `runner.py` — YAML 태스크 로드 → Ollama 호출 + 프로파일러 동시 실행
-- [ ] `exact_match.py`, `rouge.py` 구현
-- [ ] `store.py` — run/results/hw_samples 저장
-- [ ] `eval.py run` 커맨드 동작 확인 (태스크 1개, 모델 1개, HW 메트릭 포함)
+### Phase 1: 핵심 파이프라인 (3–4일) ✅
+- [x] `profiler.py` — 백그라운드 스레드로 50ms 간격 샘플링, 집계 반환
+- [x] `runner.py` — YAML 태스크 로드 → Ollama 호출 + 프로파일러 동시 실행
+- [x] `exact_match.py`, `rouge.py` 구현
+- [x] `store.py` — run/results/hw_samples 저장
+- [x] `eval.py run` 커맨드 동작 확인 (태스크 1개, 모델 1개, HW 메트릭 포함)
 
-### Phase 2: LLM Judge + Auto Analyzer (2–3일)
-- [ ] `llm_judge.py` — faithfulness / fluency 기준 프롬프트 설계
-- [ ] judge 모델 일관성 테스트 (3회 반복 → 점수 분산 ≤ 0.5 목표)
-- [ ] `analyzer.py` — 비교 결과 → 한국어 자동 분석 텍스트 생성
-- [ ] 스필오버/쓰로틀링 자동 감지 로직
+### Phase 2: LLM Judge + Auto Analyzer (2–3일) ✅
+- [x] `llm_judge.py` — faithfulness / fluency / correctness / compliance 기준 프롬프트 설계
+- [x] judge 모델 3회 반복 → 중앙값 사용
+- [x] `analyzer.py` — 비교 결과 → 한국어 자동 분석 텍스트 생성
+- [x] 스필오버/쓰로틀링 자동 감지 로직
 
-### Phase 3: CLI 리포트 (2일)
-- [ ] `report.py` — Rich 테이블: 품질 점수 + HW 메트릭 통합 뷰
-- [ ] `eval.py compare` — run A vs B 나란히 비교
-- [ ] `eval.py hardware` — 현재 HW 스냅샷 출력
-- [ ] `eval.py analyze` — LLM 자동 분석 출력
+### Phase 3: CLI 리포트 (2일) ✅ (CSV/HTML export 제외)
+- [x] `report.py` — Rich 테이블: 품질 점수 + HW 메트릭 통합 뷰
+- [x] `eval.py compare` — run A vs B 나란히 비교
+- [x] `eval.py hardware` — 현재 HW 스냅샷 출력
+- [x] `eval.py analyze` — LLM 자동 분석 출력
+- [x] `graph.py` — plotext 터미널 그래프 + matplotlib PNG export
 - [ ] CSV / HTML export
 
-### Phase 4: 하드웨어 특화 실험 (3–4일)
-- [ ] `quantization_sweep` — 동일 모델 Q4/Q5/Q8/FP16 전수 비교
-- [ ] `context_length_sweep` — 1K/4K/8K/16K/32K 컨텍스트 VRAM/품질 곡선
-- [ ] `thermal_endurance` — 30분 연속 추론 온도/속도 추이
-- [ ] PageNode 실제 청크로 `rag_faithfulness` 실험 실행
+### Phase 4: 하드웨어 특화 실험 (3–4일) ✅
+- [x] `quantization_sweep.yaml` — 양자화 수준별 비교 태스크 생성
+- [x] `context_length_sweep.yaml` — 컨텍스트 길이별 VRAM/품질 변화 태스크 생성
+- [x] `thermal_endurance.yaml` — 장시간 추론 내구성 테스트 (20회 연속)
+- [x] GPU 베이스라인 실험 실행 (llama3.1:8b, mistral:7b, qwen2.5:7b)
+- [x] RAG 충실도, 한국어 요약, 구조화 출력, 지시 이행 전 태스크 3모델 비교 완료
+- [x] matplotlib PNG 그래프 + 터미널 그래프 출력
+- [x] LLM 자동 분석 텍스트 생성 검증
+- [ ] PageNode 실제 청크로 `rag_faithfulness` 실험 실행 (PageNode Phase 1 이후)
 
 ### Phase 5: README + 공개 준비 (1–2일)
 - [ ] README: 문제 정의 → 설계 결정 → 핵심 발견 (수치 포함)

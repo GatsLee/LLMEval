@@ -1,0 +1,88 @@
+name: 장시간 추론 내구성 테스트
+description: |
+  동일 프롬프트를 반복 실행하여 장시간 추론 시
+  GPU 온도, 클럭 다운, t/s 변화를 추적한다.
+  최소 20회 반복으로 약 10~15분 연속 추론.
+type: qa_with_context
+evaluator: exact_match
+
+inputs:
+  - context: "조선의 수도는 한양(현재의 서울)이다."
+    question: "조선의 수도는 어디인가요?"
+    reference: "한양"
+
+  - context: "대한민국의 초대 대통령은 이승만이다."
+    question: "대한민국의 초대 대통령은 누구인가요?"
+    reference: "이승만"
+
+  - context: "파이썬은 귀도 반 로섬이 1991년에 만든 프로그래밍 언어이다."
+    question: "파이썬을 만든 사람은 누구인가요?"
+    reference: "귀도 반 로섬"
+
+  - context: "지구에서 달까지의 평균 거리는 약 384,400km이다."
+    question: "지구에서 달까지의 거리는 약 몇 km인가요?"
+    reference: "384,400"
+
+  - context: "HTTP 상태 코드 404는 요청한 리소스를 찾을 수 없음을 의미한다."
+    question: "HTTP 404 상태 코드의 의미는 무엇인가요?"
+    reference: "찾을 수 없음"
+
+  - context: "리눅스 커널은 1991년 리누스 토르발스가 처음 발표하였다."
+    question: "리눅스 커널을 만든 사람은 누구인가요?"
+    reference: "리누스 토르발스"
+
+  - context: "Docker는 2013년 Solomon Hykes가 발표한 컨테이너 플랫폼이다."
+    question: "Docker를 만든 사람은 누구인가요?"
+    reference: "Solomon Hykes"
+
+  - context: "TCP/IP는 4개의 계층으로 구성된다: 네트워크 인터페이스, 인터넷, 전송, 응용 계층이다."
+    question: "TCP/IP의 4개 계층을 나열하세요."
+    reference: "네트워크 인터페이스, 인터넷, 전송, 응용"
+
+  - context: "Git은 2005년 리누스 토르발스가 리눅스 커널 개발을 위해 만든 분산 버전 관리 시스템이다."
+    question: "Git은 누가 만들었나요?"
+    reference: "리누스 토르발스"
+
+  - context: "JSON(JavaScript Object Notation)은 키-값 쌍으로 데이터를 표현하는 경량 데이터 교환 형식이다."
+    question: "JSON은 어떤 방식으로 데이터를 표현하나요?"
+    reference: "키-값 쌍"
+
+  - context: "PostgreSQL은 1996년 출시된 오픈소스 관계형 데이터베이스이다."
+    question: "PostgreSQL은 언제 출시되었나요?"
+    reference: "1996"
+
+  - context: "Redis는 인메모리 키-값 스토어로, 캐시와 메시지 브로커로 주로 사용된다."
+    question: "Redis의 주요 용도 두 가지는 무엇인가요?"
+    reference: "캐시와 메시지 브로커"
+
+  - context: "Nginx는 2004년 Igor Sysoev가 개발한 웹 서버이다."
+    question: "Nginx를 만든 사람은 누구인가요?"
+    reference: "Igor Sysoev"
+
+  - context: "HTTPS는 HTTP에 TLS/SSL 암호화를 추가하여 보안을 강화한 프로토콜이다."
+    question: "HTTPS는 HTTP에 무엇을 추가한 것인가요?"
+    reference: "TLS/SSL"
+
+  - context: "GraphQL은 2015년 Facebook이 공개한 API 쿼리 언어이다."
+    question: "GraphQL을 만든 회사는 어디인가요?"
+    reference: "Facebook"
+
+  - context: "Rust는 2010년 Mozilla에서 발표한 시스템 프로그래밍 언어로 메모리 안전성이 특징이다."
+    question: "Rust를 발표한 조직은 어디인가요?"
+    reference: "Mozilla"
+
+  - context: "WebSocket은 클라이언트와 서버 간 양방향 실시간 통신을 지원하는 프로토콜이다."
+    question: "WebSocket의 핵심 특징은 무엇인가요?"
+    reference: "양방향 실시간 통신"
+
+  - context: "OAuth 2.0은 토큰 기반 인증/인가 프레임워크로 2012년 RFC 6749로 표준화되었다."
+    question: "OAuth 2.0은 어떤 RFC로 표준화되었나요?"
+    reference: "RFC 6749"
+
+  - context: "Kubernetes의 가장 작은 배포 단위는 파드(Pod)이며, 하나 이상의 컨테이너를 포함한다."
+    question: "Kubernetes의 가장 작은 배포 단위는 무엇인가요?"
+    reference: "파드"
+
+  - context: "CORS(Cross-Origin Resource Sharing)는 브라우저가 다른 출처의 리소스에 접근할 수 있게 하는 HTTP 메커니즘이다."
+    question: "CORS의 약어는 무엇의 줄임말인가요?"
+    reference: "Cross-Origin Resource Sharing"

@@ -1,0 +1,29 @@
+name: 양자화 수준별 품질/성능 비교
+description: |
+  동일 모델의 다른 양자화 수준(Q4_K_M, Q8_0 등)을 비교하여
+  품질 vs VRAM vs 속도 트레이드오프를 측정한다.
+  모델 태그 예: qwen2.5:7b-instruct-q4_K_M, qwen2.5:7b-instruct-q8_0
+type: qa_with_context
+evaluator: llm_judge
+judge_criteria: faithfulness
+
+inputs:
+  - context: "세종대왕(1397~1450)은 조선의 제4대 왕으로, 1443년 훈민정음을 창제하였다. 훈민정음은 자음 17자와 모음 11자로 구성된 표음 문자 체계이다."
+    question: "훈민정음의 자음과 모음은 각각 몇 자인가요?"
+    reference: "자음 17자, 모음 11자"
+
+  - context: "트랜스포머(Transformer) 모델은 2017년 'Attention Is All You Need' 논문에서 처음 제안되었다. 인코더-디코더 구조와 멀티헤드 어텐션 메커니즘을 핵심으로 한다."
+    question: "트랜스포머의 두 가지 핵심 구조는 무엇인가요?"
+    reference: "인코더-디코더 구조와 멀티헤드 어텐션 메커니즘"
+
+  - context: "RAG(Retrieval-Augmented Generation)는 외부 데이터베이스에서 관련 문서를 검색하여 LLM의 답변 생성에 활용하는 기법이다. 검색 단계와 생성 단계로 구성된다."
+    question: "RAG의 두 단계는 무엇인가요?"
+    reference: "검색 단계와 생성 단계"
+
+  - context: "LoRA(Low-Rank Adaptation)는 사전학습된 가중치를 고정한 채 저랭크 행렬만 학습하여 파인튜닝 비용을 줄이는 기법이다. 일반적으로 원본 파라미터의 0.1~1% 수준의 학습 파라미터만 사용한다."
+    question: "LoRA가 학습하는 파라미터 비율은 원본 대비 얼마인가요?"
+    reference: "0.1~1%"
+
+  - context: "벡터 데이터베이스는 고차원 벡터를 저장하고 유사도 검색을 지원한다. 대표적으로 ChromaDB, Pinecone, Milvus, Weaviate가 있으며, 코사인 유사도나 유클리드 거리 기반으로 검색한다."
+    question: "대표적인 벡터 데이터베이스 4가지를 나열하세요."
+    reference: "ChromaDB, Pinecone, Milvus, Weaviate"
