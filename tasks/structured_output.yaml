@@ -1,0 +1,35 @@
+name: 구조화 출력 준수 평가
+description: |
+  모델이 JSON 형식을 정확히 지켜 출력하는지 평가.
+  regex로 JSON 유효성 검사 + exact_match로 필수 필드 존재 확인.
+type: structured_output
+evaluator: exact_match
+
+inputs:
+  - request: '다음 정보를 JSON으로 정리하세요. 이름: 김철수, 나이: 28, 직업: 개발자. 필드명은 name, age, job 사용.'
+    reference: '"name"'
+
+  - request: '서울의 주요 정보를 JSON으로 작성하세요. 포함 항목: 도시명(city), 인구(population), 자치구 수(districts). 실제 데이터 사용.'
+    reference: '"city"'
+
+  - request: |
+      다음 docker 서비스 정보를 JSON으로 구조화하세요.
+      서비스명: nginx, 포트: 80, 이미지: nginx:latest, 상태: running.
+      필드: service_name, port, image, status
+    reference: '"service_name"'
+
+  - request: |
+      다음 모델 비교 데이터를 JSON 배열로 작성하세요.
+      모델 1: llama3, 속도 45t/s, 메모리 4GB
+      모델 2: mistral, 속도 32t/s, 메모리 5GB
+      각 객체 필드: model, tps, memory_gb
+    reference: '"tps"'
+
+  - request: '오늘 날씨 정보를 JSON으로 작성하세요. 포함: 날짜(date, YYYY-MM-DD), 온도(temp_c, 숫자), 상태(condition, "맑음"/"흐림"/"비").'
+    reference: '"date"'
+
+  - request: |
+      다음 에러 로그를 파싱하여 JSON으로 정리하세요.
+      "[2026-03-01 09:23:11] ERROR: Connection refused to 127.0.0.1:5432 (PostgreSQL)"
+      필드: timestamp, level, message, host, port
+    reference: '"timestamp"'

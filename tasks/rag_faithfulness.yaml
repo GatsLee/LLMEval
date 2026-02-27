@@ -1,0 +1,40 @@
+name: RAG 충실도 평가
+description: |
+  컨텍스트 기반 Q&A에서 모델이 주어진 컨텍스트에만 근거하여 답변하는지 평가.
+  컨텍스트에 없는 내용을 지어내면 낮은 점수.
+type: qa_with_context
+evaluator: llm_judge
+judge_criteria: faithfulness
+
+inputs:
+  - context: "세종대왕(1397~1450)은 조선의 제4대 왕으로, 1443년 훈민정음을 창제하였다. 훈민정음은 자음 17자와 모음 11자로 구성된 표음 문자 체계이다."
+    question: "훈민정음은 몇 년에 창제되었나요?"
+    reference: "1443년"
+
+  - context: "대한민국의 수도는 서울이며, 인구는 약 950만 명이다. 서울은 한강을 중심으로 강북과 강남으로 나뉘며, 25개의 자치구로 이루어져 있다."
+    question: "서울의 자치구는 몇 개인가요?"
+    reference: "25개"
+
+  - context: "파이썬(Python)은 1991년 귀도 반 로섬이 발표한 고급 프로그래밍 언어이다. 들여쓰기를 문법으로 사용하며, 동적 타이핑을 지원한다."
+    question: "파이썬을 만든 사람은 누구인가요?"
+    reference: "귀도 반 로섬"
+
+  - context: "RAG(Retrieval-Augmented Generation)는 외부 데이터베이스에서 관련 문서를 검색하여 LLM의 답변 생성에 활용하는 기법이다. 검색 단계와 생성 단계로 구성된다."
+    question: "RAG에서 LLM은 어떤 두 단계를 거치나요?"
+    reference: "검색 단계와 생성 단계"
+
+  - context: "Docker는 2013년 Solomon Hykes가 발표한 컨테이너 기반 가상화 플랫폼이다. 이미지와 컨테이너의 개념을 사용하며, Dockerfile로 이미지를 정의한다."
+    question: "Docker의 이미지를 정의하는 파일 이름은 무엇인가요?"
+    reference: "Dockerfile"
+
+  - context: "임진왜란(1592~1598)은 일본이 조선을 침략한 전쟁이다. 이순신 장군은 거북선을 앞세워 일본 수군을 여러 차례 격파했다. 노량 해전에서 이순신은 전사하였다."
+    question: "이순신 장군이 전사한 전투는 무엇인가요?"
+    reference: "노량 해전"
+
+  - context: "트랜스포머(Transformer) 모델은 2017년 'Attention Is All You Need' 논문에서 처음 제안되었다. 인코더-디코더 구조와 멀티헤드 어텐션 메커니즘을 핵심으로 한다."
+    question: "트랜스포머를 처음 제안한 논문의 제목은 무엇인가요?"
+    reference: "Attention Is All You Need"
+
+  - context: "벡터 데이터베이스는 고차원 벡터를 저장하고 유사도 검색을 지원하는 데이터베이스다. 코사인 유사도나 유클리드 거리를 기반으로 가장 가까운 벡터를 검색한다."
+    question: "벡터 데이터베이스에서 사용하는 유사도 측정 방법 두 가지는 무엇인가요?"
+    reference: "코사인 유사도와 유클리드 거리"

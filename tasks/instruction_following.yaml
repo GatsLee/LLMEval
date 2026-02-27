@@ -1,0 +1,24 @@
+name: 지시 이행 평가
+description: |
+  형식, 길이, 언어 등 구체적인 지시사항을 얼마나 정확히 따르는지 평가.
+  llm_judge의 compliance 기준으로 채점.
+type: instruction_following
+evaluator: llm_judge
+judge_criteria: compliance
+
+inputs:
+  - instruction: "Python으로 피보나치 수열을 구하는 함수를 작성하세요. 반드시 재귀 방식으로 구현하고, 코드 블록만 출력하세요. 설명 없이."
+
+  - instruction: "다음 문장을 한국어로 번역하세요. 반드시 존댓말을 사용하고, 번역문만 출력하세요 (원문이나 부가 설명 없이): 'The quick brown fox jumps over the lazy dog.'"
+
+  - instruction: "AI 엔지니어의 핵심 역량을 정확히 5개 항목으로 나열하세요. 번호 매기기 형식(1. 2. 3. ...)을 사용하고, 각 항목은 한 줄로 작성하세요."
+
+  - instruction: "Docker와 가상머신(VM)의 차이점을 설명하세요. 제약: 100단어 이내, 한국어, 기술 용어 최소화."
+
+  - instruction: "다음 두 옵션 중 하나만 선택하고, 선택 이유를 3문장으로 설명하세요. A) PostgreSQL B) MongoDB. 반드시 'A를 선택합니다' 또는 'B를 선택합니다'로 시작하세요."
+
+  - instruction: "소수(prime number)를 찾는 Python 함수를 작성하세요. 요구사항: 1) 타입 힌트 포함 2) docstring 포함 3) 에라토스테네스의 체 알고리즘 사용. 코드만 출력."
+
+  - instruction: "LLM 파인튜닝에 대해 초등학생도 이해할 수 있게 설명하세요. 비유를 하나 이상 사용하고, 전문 용어 없이 2~3문장으로 작성하세요."
+
+  - instruction: "다음 리스트를 JSON 배열로 변환하세요. 각 항목은 'name'과 'type' 필드를 가져야 합니다: nginx(웹서버), PostgreSQL(데이터베이스), Redis(캐시), Ollama(AI). 오직 JSON만 출력하세요."
