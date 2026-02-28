@@ -199,6 +199,55 @@ def get_all_runs() -> List[Dict]:
     return results
 
 
+def get_embedding_summary(run_id: str) -> Dict[str, Dict]:
+    """임베딩 실험의 모델별 요약 통계 (Spearman, Recall, MRR 등)."""
+    from .evaluators.embedding_metrics import spearman_rank_correlation
+
+    results = get_run_results(run_id)
+    models = list(dict.fromkeys(r["model"] for r in results))
+    summary = {}
+
+    for model in models:
+        rows = [r for r in results if r["model"] == model]
+        scores = [r["score"] for r in rows if r["score"] is not None]
+        latencies = [r["ttft_ms"] for r in rows if r["ttft_ms"]]
+        eps_vals = [r["tps"] for r in rows if r["tps"]]
+        details = [r.get("score_detail") or {} for r in rows]
+
+        dims = details[0].get("dimensions", 0) if details else 0
+
+        s = {
+            "n": len(rows),
+            "avg_score": sum(scores) / len(scores) if scores else 0,
+            "avg_latency_ms": sum(latencies) / len(latencies) if latencies else 0,
+            "avg_eps": sum(eps_vals) / len(eps_vals) if eps_vals else 0,
+            "dimensions": dims,
+        }
+
+        # STS: Spearman 상관계수
+        predicted = [d.get("predicted_sim") for d in details if d.get("predicted_sim") is not None]
+        human = [d.get("human_score") for d in details if d.get("human_score") is not None]
+        if predicted and human and len(predicted) == len(human):
+            s["spearman"] = spearman_rank_correlation(predicted, human)
+            errors = [d.get("error", 0) for d in details]
+            s["avg_error"] = sum(errors) / len(errors) if errors else 0
+
+        # Retrieval: Recall, MRR
+        recall1 = [d.get("recall_at_1") for d in details if d.get("recall_at_1") is not None]
+        recall3 = [d.get("recall_at_3") for d in details if d.get("recall_at_3") is not None]
+        mrr_vals = [d.get("mrr") for d in details if d.get("mrr") is not None]
+        if recall1:
+            s["avg_recall_at_1"] = sum(recall1) / len(recall1)
+        if recall3:
+            s["avg_recall_at_3"] = sum(recall3) / len(recall3)
+        if mrr_vals:
+            s["avg_mrr"] = sum(mrr_vals) / len(mrr_vals)
+
+        summary[model] = s
+
+    return summary
+
+
 def get_leaderboard(task_name: Optional[str] = None) -> List[Dict]:
     """모든 run에서 모델별 평균 점수/속도 집계."""
     conn = _conn()

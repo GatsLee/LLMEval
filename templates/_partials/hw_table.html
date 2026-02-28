@@ -1,0 +1,44 @@
+<table>
+    <thead>
+        <tr>
+            <th>Model</th>
+            <th>VRAM Peak</th>
+            <th>GPU Util</th>
+            <th>GPU Temp</th>
+            <th>Power</th>
+            <th>RAM Peak</th>
+            <th>Warnings</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for model, s in stats.items() %}
+        <tr>
+            <td>{{ model }}</td>
+            <td>
+                {% set pct = s.vram_peak_mb / s.vram_budget_mb if s.vram_budget_mb else 0 %}
+                <span class="{{ 'warn' if pct >= 0.85 else '' }}">
+                    {{ "{:,}".format(s.vram_peak_mb) }}MB
+                </span>
+            </td>
+            <td>{{ "%.0f"|format(s.gpu_util_avg) }}%</td>
+            <td>
+                <span class="{{ 'bad' if s.gpu_temp_peak >= 83 else ('warn' if s.gpu_temp_peak >= 78 else 'good') }}">
+                    {{ s.gpu_temp_peak }}&deg;C
+                </span>
+            </td>
+            <td>{{ "%.1f"|format(s.gpu_power_avg) }}W</td>
+            <td>{{ "{:,}".format(s.ram_peak_mb) }}MB</td>
+            <td>
+                {% set warnings = [] %}
+                {% if s.spillover %}{% set _ = warnings.append('SPILL') %}{% endif %}
+                {% if s.throttle %}{% set _ = warnings.append('THRTL') %}{% endif %}
+                {% if warnings %}
+                <span class="bad">{{ warnings | join(', ') }}</span>
+                {% else %}
+                <span class="dim">&mdash;</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>

@@ -1,0 +1,33 @@
+<div class="section-title">Retrieval Embedding Quality</div>
+<table>
+    <thead>
+        <tr>
+            <th>Model</th>
+            <th>Recall@1</th>
+            <th>Recall@3</th>
+            <th>MRR</th>
+            <th>Dimensions</th>
+            <th>Avg Latency</th>
+            <th>Embed/s</th>
+            <th>N</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for model, s in summary.items() %}
+        <tr>
+            <td>{{ model }}</td>
+            <td class="{{ 'good' if s.get('avg_recall_at_1', 0) >= 0.8 else ('warn' if s.get('avg_recall_at_1', 0) >= 0.5 else 'bad') }}">
+                {{ "%.2f"|format(s.get('avg_recall_at_1', 0)) }}
+            </td>
+            <td class="{{ 'good' if s.get('avg_recall_at_3', 0) >= 0.8 else ('warn' if s.get('avg_recall_at_3', 0) >= 0.5 else 'bad') }}">
+                {{ "%.2f"|format(s.get('avg_recall_at_3', 0)) }}
+            </td>
+            <td>{{ "%.4f"|format(s.get('avg_mrr', 0)) }}</td>
+            <td class="dim">{{ s.get('dimensions', '?') }}</td>
+            <td>{{ "%.0f"|format(s.get('avg_latency_ms', 0)) }}ms</td>
+            <td>{{ "%.1f"|format(s.get('avg_eps', 0)) }}</td>
+            <td class="dim">{{ s.get('n', 0) }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>

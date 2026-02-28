@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Leaderboard - LLMEval{% endblock %}
+{% block content %}
+<div class="section-title">Leaderboard</div>
+
+<div class="mb-16">
+    <label for="task-filter" class="dim">Filter by task: </label>
+    <select id="task-filter"
+            hx-get="/api/leaderboard"
+            hx-target="#leaderboard-body"
+            hx-trigger="change"
+            name="task">
+        <option value="">All Tasks</option>
+        {% for t in tasks %}
+        <option value="{{ t }}" {% if selected_task == t %}selected{% endif %}>{{ t }}</option>
+        {% endfor %}
+    </select>
+</div>
+
+<table>
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Model</th>
+            <th>Task</th>
+            <th>Runs</th>
+            <th>Avg Score</th>
+            <th>Avg t/s</th>
+            <th>Avg TTFT</th>
+        </tr>
+    </thead>
+    <tbody id="leaderboard-body" hx-get="/api/leaderboard" hx-trigger="load">
+        <tr><td colspan="7" class="loading">Loading...</td></tr>
+    </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Run {{ run.run_id }} - LLMEval{% endblock %}
+{% block content %}
+<div class="mb-16">
+    <a href="/">&larr; Back to runs</a>
+</div>
+<div class="stats-row">
+    <div class="stat-card">
+        <div class="label">Run ID</div>
+        <div class="value" style="font-size:16px;">{{ run.run_id }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="label">Task</div>
+        <div class="value" style="font-size:16px;">{{ run.task_name }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="label">Date</div>
+        <div class="value" style="font-size:14px;">{{ run.created_at }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="label">Models</div>
+        <div class="value" style="font-size:14px;">{{ run.models | join(', ') }}</div>
+    </div>
+</div>
+
+{% if run.description %}
+<p class="dim mb-16">{{ run.description }}</p>
+{% endif %}
+
+<div class="tabs">
+    <button class="tab-btn active" onclick="switchTab(this, '/api/run/{{ run.run_id }}/quality')">Quality</button>
+    <button class="tab-btn" onclick="switchTab(this, '/api/run/{{ run.run_id }}/hardware')">Hardware</button>
+    <button class="tab-btn" onclick="switchTab(this, '/api/run/{{ run.run_id }}/charts')">Charts</button>
+</div>
+<div id="tab-content" hx-get="/api/run/{{ run.run_id }}/quality" hx-trigger="load">
+    <span class="loading">Loading...</span>
+</div>
+
+<script>
+function switchTab(btn, url) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    htmx.ajax('GET', url, '#tab-content');
+}
+</script>
+{% endblock %}

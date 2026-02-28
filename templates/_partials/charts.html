@@ -1,0 +1,81 @@
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
+    <div>
+        <img src="/api/run/{{ run_id }}/chart/scores.png" class="chart-img" alt="Scores">
+    </div>
+    <div>
+        <img src="/api/run/{{ run_id }}/chart/speed.png" class="chart-img" alt="Speed">
+    </div>
+    <div style="grid-column: span 2;">
+        <img src="/api/run/{{ run_id }}/chart/vram.png" class="chart-img" alt="VRAM">
+    </div>
+</div>
+
+{% if models %}
+<div class="section-title" style="margin-top: 16px;">Hardware Timeline</div>
+<canvas id="hw-timeline" height="120"></canvas>
+<script>
+(function() {
+    fetch('/api/run/{{ run_id }}/hw_timeline_data')
+        .then(r => r.json())
+        .then(data => {
+            const colors = ['#4fc3f7', '#81c784', '#ffb74d', '#e57373', '#ba68c8'];
+            const datasets = [];
+            let i = 0;
+            for (const [model, d] of Object.entries(data)) {
+                datasets.push({
+                    label: model + ' VRAM (MB)',
+                    data: d.ts.map((t, j) => ({x: t, y: d.vram[j]})),
+                    borderColor: colors[i % colors.length],
+                    borderWidth: 1.5,
+                    fill: false,
+                    pointRadius: 0,
+                    yAxisID: 'y',
+                });
+                datasets.push({
+                    label: model + ' Temp (\u00b0C)',
+                    data: d.ts.map((t, j) => ({x: t, y: d.temp[j]})),
+                    borderColor: colors[i % colors.length],
+                    borderDash: [4, 4],
+                    borderWidth: 1.5,
+                    fill: false,
+                    pointRadius: 0,
+                    yAxisID: 'y1',
+                });
+                i++;
+            }
+
+            new Chart(document.getElementById('hw-timeline'), {
+                type: 'line',
+                data: { datasets },
+                options: {
+                    responsive: true,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { labels: { color: '#e0e0e0', font: { size: 10 } } },
+                    },
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            title: { display: true, text: 'Time (s)', color: '#888' },
+                            ticks: { color: '#888' },
+                            grid: { color: '#2a2a3e' },
+                        },
+                        y: {
+                            position: 'left',
+                            title: { display: true, text: 'VRAM (MB)', color: '#4fc3f7' },
+                            ticks: { color: '#4fc3f7' },
+                            grid: { color: '#2a2a3e' },
+                        },
+                        y1: {
+                            position: 'right',
+                            title: { display: true, text: 'Temp (\u00b0C)', color: '#ffb74d' },
+                            ticks: { color: '#ffb74d' },
+                            grid: { drawOnChartArea: false },
+                        },
+                    },
+                },
+            });
+        });
+})();
+</script>
+{% endif %}

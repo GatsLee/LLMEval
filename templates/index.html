@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}LLMEval - Runs{% endblock %}
+{% block content %}
+<div class="stats-row">
+    <div class="stat-card">
+        <div class="label">Total Runs</div>
+        <div class="value">{{ total_runs }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="label">Models Tested</div>
+        <div class="value">{{ total_models }}</div>
+    </div>
+</div>
+
+<div class="section-title">Experiment Runs</div>
+<table>
+    <thead>
+        <tr>
+            <th>Run ID</th>
+            <th>Date</th>
+            <th>Task</th>
+            <th>Type</th>
+            <th>Models</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for r in runs %}
+        <tr>
+            <td><a href="/run/{{ r.run_id }}">{{ r.run_id }}</a></td>
+            <td class="dim">{{ r.created_at[:16] }}</td>
+            <td>{{ r.task_name }}</td>
+            <td>
+                {% if r.task_type and r.task_type.startswith('embedding') %}
+                <span class="tag embedding">embedding</span>
+                {% else %}
+                <span class="tag">{{ r.task_type or 'llm' }}</span>
+                {% endif %}
+            </td>
+            <td>{{ r.models | join(', ') }}</td>
+            <td class="dim">{{ r.description or '—' }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

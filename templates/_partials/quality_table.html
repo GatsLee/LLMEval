@@ -1,0 +1,22 @@
+<table>
+    <thead>
+        <tr>
+            <th>Model</th>
+            <th>Avg Score</th>
+            <th>N</th>
+            <th>Avg t/s</th>
+            <th>Avg TTFT</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for model, s in stats.items() %}
+        <tr>
+            <td>{{ model }}</td>
+            <td class="{{ score_class(s.avg_score) }}">{{ "%.2f"|format(s.avg_score) }}</td>
+            <td class="dim">{{ s.n }}</td>
+            <td>{{ "%.1f"|format(s.avg_tps) }}</td>
+            <td>{{ "%.0f"|format(s.avg_ttft_ms) }}ms</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>

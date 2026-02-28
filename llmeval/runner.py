@@ -10,7 +10,7 @@ import ollama
 import yaml
 from jinja2 import Template
 
-from .evaluators import exact_match, rouge, llm_judge
+from .evaluators import exact_match, rouge, llm_judge, embedding_metrics
 from .models import InferenceResult, HWSample, RunConfig
 from .profiler import HWProfiler
 from .store import init_db, save_run, save_result, save_hw_samples, update_hw_summary
@@ -89,6 +89,97 @@ def _run_inference(model: str, prompt: str, options: Optional[Dict[str, Any]] = 
     return response, tps, ttft_ms, total_ms, token_count
 
 
+# ── 임베딩 실행 ──────────────────────────────────────────────────────────────
+
+def _run_embedding(model: str, texts: List[str]) -> tuple:
+    """Returns: (embeddings, latency_ms, embeds_per_sec)"""
+    start = time.perf_counter()
+    result = ollama.embed(model=model, input=texts)
+    elapsed = time.perf_counter() - start
+    embeddings = result["embeddings"]
+    latency_ms = elapsed * 1000
+    eps = len(texts) / elapsed if elapsed > 0 else 0
+    return embeddings, latency_ms, eps
+
+
+def _run_embedding_experiment(
+    task: dict,
+    task_type: str,
+    models: List[str],
+    run_id: str,
+    inputs: list,
+    console=None,
+) -> None:
+    """임베딩 모델 실험 (STS 또는 Retrieval)."""
+    import json as _json
+
+    for model in models:
+        if console:
+            console.print(f"\n  [bold cyan]모델:[/] {model}")
+
+        profiler = HWProfiler(sample_interval_ms=50)
+        profiler.start()
+
+        for idx, item in enumerate(inputs):
+            if console:
+                console.print(f"    입력 {idx + 1}/{len(inputs)} ...", end=" ")
+
+            if task_type == "embedding_sts":
+                texts = [item["text_a"], item["text_b"]]
+                embeddings, latency_ms, eps = _run_embedding(model, texts)
+                sim = embedding_metrics.cosine_similarity(embeddings[0], embeddings[1])
+                detail = embedding_metrics.evaluate_sts(sim, item["human_score"])
+                detail["dimensions"] = len(embeddings[0])
+                score = sim
+                prompt_str = _json.dumps({"text_a": item["text_a"], "text_b": item["text_b"]}, ensure_ascii=False)
+                response_str = f"cosine_sim={sim:.4f}"
+
+            elif task_type == "embedding_retrieval":
+                all_texts = [item["query"]] + item["candidates"]
+                embeddings, latency_ms, eps = _run_embedding(model, all_texts)
+                detail = embedding_metrics.evaluate_retrieval(
+                    embeddings[0], embeddings[1:], item["correct_idx"]
+                )
+                detail["dimensions"] = len(embeddings[0])
+                score = detail["recall_at_1"]
+                prompt_str = _json.dumps({"query": item["query"]}, ensure_ascii=False)
+                response_str = f"rank={detail['correct_rank']},recall@1={detail['recall_at_1']}"
+
+            else:
+                continue
+
+            if console:
+                console.print(f"score={score:.4f} | {eps:.1f} emb/s | {latency_ms:.0f}ms")
+
+            result = InferenceResult(
+                model=model,
+                input_idx=idx,
+                prompt=prompt_str,
+                response=response_str,
+                tps=eps,
+                ttft_ms=latency_ms,
+                total_ms=latency_ms,
+                token_count=0,
+                score=score,
+                score_detail=detail,
+            )
+            save_result(run_id, result)
+
+        hw_summary_dict = profiler.stop()
+        update_hw_summary(run_id, model, hw_summary_dict)
+
+        raw = profiler.get_raw_samples()
+        hw_samples = [
+            HWSample(
+                ts_ms=s["ts_ms"], vram_mb=s["vram_mb"], gpu_util=s["gpu_util"],
+                gpu_temp=s["gpu_temp"], gpu_power_w=s["gpu_power_w"],
+                ram_mb=s["ram_mb"], cpu_util=s["cpu_util"],
+            )
+            for s in raw
+        ]
+        save_hw_samples(run_id, model, hw_samples)
+
+
 # ── 평가기 디스패치 ───────────────────────────────────────────────────────────
 
 def _evaluate(response: str, task: dict, item: dict) -> tuple[float, dict]:
@@ -149,6 +240,11 @@ def run_experiment(
     save_run(config)
 
     inputs = task.get("inputs", [])
+
+    # 임베딩 태스크는 별도 실험 루프로 처리
+    if task["type"] in ("embedding_sts", "embedding_retrieval"):
+        _run_embedding_experiment(task, task["type"], models, run_id, inputs, console)
+        return run_id
 
     for model in models:
         if console:

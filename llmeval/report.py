@@ -10,7 +10,7 @@ from rich.table import Table
 from rich.text import Text
 from rich import box
 
-from .store import get_run, get_run_results, get_all_runs, get_leaderboard
+from .store import get_run, get_run_results, get_all_runs, get_leaderboard, get_embedding_summary
 
 console = Console()
 
@@ -60,6 +60,69 @@ def _warn(flag: bool, label: str) -> Text:
     return Text("—", style="dim")
 
 
+# ── 임베딩 리포트 ─────────────────────────────────────────────────────────────
+
+def _show_embedding_report(run: dict, results: list) -> None:
+    """임베딩 태스크 결과 리포트."""
+    task_type = run["task_type"]
+    models = list(dict.fromkeys(r["model"] for r in results))
+    summary = get_embedding_summary(run["run_id"])
+
+    if task_type == "embedding_sts":
+        t = Table(title="STS 임베딩 품질", box=box.ROUNDED, show_lines=True)
+        t.add_column("모델", style="bold white")
+        t.add_column("Avg Cosine Sim", justify="center")
+        t.add_column("Spearman ρ", justify="center")
+        t.add_column("Avg Error", justify="center")
+        t.add_column("Dimensions", justify="center", style="dim")
+        t.add_column("Avg Latency", justify="right")
+        t.add_column("Embed/s", justify="right")
+        t.add_column("N", justify="center", style="dim")
+
+        for model in models:
+            s = summary.get(model, {})
+            rho = s.get("spearman", 0)
+            rho_color = "green" if rho >= 0.7 else ("yellow" if rho >= 0.4 else "red")
+            t.add_row(
+                model,
+                f"{s.get('avg_score', 0):.4f}",
+                Text(f"{rho:.4f}", style=rho_color),
+                f"{s.get('avg_error', 0):.4f}",
+                str(s.get("dimensions", "?")),
+                f"{s.get('avg_latency_ms', 0):.0f}ms",
+                f"{s.get('avg_eps', 0):.1f}",
+                str(s.get("n", 0)),
+            )
+        console.print(t)
+
+    elif task_type == "embedding_retrieval":
+        t = Table(title="검색 임베딩 품질", box=box.ROUNDED, show_lines=True)
+        t.add_column("모델", style="bold white")
+        t.add_column("Recall@1", justify="center")
+        t.add_column("Recall@3", justify="center")
+        t.add_column("MRR", justify="center")
+        t.add_column("Dimensions", justify="center", style="dim")
+        t.add_column("Avg Latency", justify="right")
+        t.add_column("Embed/s", justify="right")
+        t.add_column("N", justify="center", style="dim")
+
+        for model in models:
+            s = summary.get(model, {})
+            r1 = s.get("avg_recall_at_1", 0)
+            r1_color = "green" if r1 >= 0.8 else ("yellow" if r1 >= 0.5 else "red")
+            t.add_row(
+                model,
+                Text(f"{r1:.2f}", style=r1_color),
+                f"{s.get('avg_recall_at_3', 0):.2f}",
+                f"{s.get('avg_mrr', 0):.4f}",
+                str(s.get("dimensions", "?")),
+                f"{s.get('avg_latency_ms', 0):.0f}ms",
+                f"{s.get('avg_eps', 0):.1f}",
+                str(s.get("n", 0)),
+            )
+        console.print(t)
+
+
 # ── 메인 리포트 ───────────────────────────────────────────────────────────────
 
 def show_report(run_id: str) -> None:
@@ -74,6 +137,11 @@ def show_report(run_id: str) -> None:
         return
 
     console.rule(f"[bold]Run: {run['description']}  │  {run['created_at']}  │  Task: {run['task_name']}")
+
+    # 임베딩 태스크는 별도 리포트
+    if run.get("task_type") in ("embedding_sts", "embedding_retrieval"):
+        _show_embedding_report(run, results)
+        return
 
     # 모델별 집계
     models = list(dict.fromkeys(r["model"] for r in results))

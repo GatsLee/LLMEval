@@ -1,0 +1,16 @@
+{% for r in rows %}
+<tr>
+    <td class="dim">{{ loop.index }}</td>
+    <td>{{ r.model }}</td>
+    <td>{{ r.task_name }}</td>
+    <td class="dim">{{ r.n }}</td>
+    <td class="{{ 'good' if r.avg_score and r.avg_score >= 4.0 else ('warn' if r.avg_score and r.avg_score >= 2.5 else 'bad') }}">
+        {{ "%.2f"|format(r.avg_score) if r.avg_score else '&mdash;' }}
+    </td>
+    <td>{{ "%.1f"|format(r.avg_tps) if r.avg_tps else '&mdash;' }}</td>
+    <td>{{ "%.0f"|format(r.avg_ttft_ms) if r.avg_ttft_ms else '&mdash;' }}ms</td>
+</tr>
+{% endfor %}
+{% if not rows %}
+<tr><td colspan="7" class="dim">No data</td></tr>
+{% endif %}

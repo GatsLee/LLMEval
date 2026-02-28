@@ -193,5 +193,19 @@ def runs():
     show_runs()
 
 
+# ── dashboard ────────────────────────────────────────────────────────────────
+
+@app.command()
+def dashboard(
+    host: str = typer.Option("127.0.0.1", "--host", help="바인드 주소"),
+    port: int = typer.Option(8501, "--port", "-p", help="포트"),
+):
+    """웹 대시보드 실행 (FastAPI + HTMX)."""
+    import uvicorn
+    from llmeval.dashboard import app as dash_app
+    console.print(f"[bold cyan]대시보드 시작:[/] http://{host}:{port}")
+    uvicorn.run(dash_app, host=host, port=port, log_level="warning")
+
+
 if __name__ == "__main__":
     app()
