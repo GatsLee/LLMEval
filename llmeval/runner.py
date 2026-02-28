@@ -4,7 +4,7 @@ Runner: YAML 태스크 로드 → Ollama 추론 + HW 프로파일링 동시 실�
 import time
 import uuid
 from pathlib import Path
-from typing import List
+from typing import Dict, List, Optional, Any
 
 import ollama
 import yaml
@@ -53,18 +53,22 @@ def _build_prompt(task_type: str, item: dict) -> str:
 
 # ── 추론 실행 ─────────────────────────────────────────────────────────────────
 
-def _run_inference(model: str, prompt: str) -> tuple:
+def _run_inference(model: str, prompt: str, options: Optional[Dict[str, Any]] = None) -> tuple:
     """Returns: (response, tps, ttft_ms, total_ms, token_count)"""
     start = time.perf_counter()
     first_token_ts = None
     chunks = []
     eval_count = 0
 
-    stream = ollama.chat(
-        model=model,
-        messages=[{"role": "user", "content": prompt}],
-        stream=True,
-    )
+    kwargs: Dict[str, Any] = {
+        "model": model,
+        "messages": [{"role": "user", "content": prompt}],
+        "stream": True,
+    }
+    if options:
+        kwargs["options"] = options
+
+    stream = ollama.chat(**kwargs)
 
     for chunk in stream:
         content = chunk["message"]["content"]
@@ -117,12 +121,20 @@ def run_experiment(
     models: List[str],
     description: str = "",
     console=None,
+    cli_options_override: Optional[Dict[str, Any]] = None,
 ) -> str:
     """실험 실행 후 run_id 반환."""
     init_db()
 
     with open(task_path) as f:
         task = yaml.safe_load(f)
+
+    # Ollama options: YAML 태스크 설정 + CLI 오버라이드 병합
+    ollama_options = task.get("ollama_options", None)
+    if cli_options_override:
+        if ollama_options is None:
+            ollama_options = {}
+        ollama_options.update(cli_options_override)
 
     run_id = str(uuid.uuid4())[:8]
     config = RunConfig(
@@ -132,6 +144,7 @@ def run_experiment(
         task_type=task["type"],
         models=models,
         created_at=time.strftime("%Y-%m-%dT%H:%M:%S"),
+        ollama_options=ollama_options,
     )
     save_run(config)
 
@@ -152,7 +165,7 @@ def run_experiment(
             if console:
                 console.print(f"    입력 {idx + 1}/{len(inputs)} ...", end=" ")
 
-            response, tps, ttft_ms, total_ms, token_count = _run_inference(model, prompt)
+            response, tps, ttft_ms, total_ms, token_count = _run_inference(model, prompt, options=ollama_options)
             tps_timeline.append(tps)
 
             score, score_detail = _evaluate(response, task, item)

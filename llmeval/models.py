@@ -39,6 +39,7 @@ class RunConfig(BaseModel):
     task_type: str
     models: List[str]
     created_at: str
+    ollama_options: Optional[Dict[str, Any]] = None
 
 
 class HWSample(BaseModel):

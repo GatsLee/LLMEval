@@ -29,19 +29,26 @@ def run(
     task: str = typer.Option(..., "--task", "-t", help="YAML 태스크 파일 경로"),
     models: str = typer.Option(..., "--models", "-m", help="모델 목록 (콤마 구분, 예: llama3.1:8b,mistral:7b)"),
     description: str = typer.Option("", "--description", "-d", help="실험 설명"),
+    num_gpu: int = typer.Option(-1, "--num-gpu", help="GPU 레이어 수 (-1=자동, 0=CPU, 99=전체 GPU)"),
 ):
     """태스크 실험 실행 (추론 + HW 프로파일링 + 평가)."""
     from llmeval.runner import run_experiment
     from llmeval.report import show_report
 
     model_list = [m.strip() for m in models.split(",")]
-    console.print(Panel(
-        f"[bold]태스크:[/] {task}\n[bold]모델:[/] {', '.join(model_list)}",
-        title="[bold cyan]LLMEval 실험 시작",
-        box=box.ROUNDED,
-    ))
 
-    run_id = run_experiment(task, model_list, description, console=console)
+    info = f"[bold]태스크:[/] {task}\n[bold]모델:[/] {', '.join(model_list)}"
+    if num_gpu >= 0:
+        info += f"\n[bold]num_gpu:[/] {num_gpu}"
+
+    console.print(Panel(info, title="[bold cyan]LLMEval 실험 시작", box=box.ROUNDED))
+
+    cli_options = {}
+    if num_gpu >= 0:
+        cli_options["num_gpu"] = num_gpu
+
+    run_id = run_experiment(task, model_list, description, console=console,
+                            cli_options_override=cli_options or None)
     console.print(f"\n[bold green]완료! run_id:[/] [cyan]{run_id}[/]")
     console.print()
     show_report(run_id)

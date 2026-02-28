@@ -19,12 +19,13 @@ def init_db() -> None:
     conn = _conn()
     conn.executescript("""
     CREATE TABLE IF NOT EXISTS runs (
-        run_id      TEXT PRIMARY KEY,
-        created_at  TEXT NOT NULL,
-        description TEXT,
-        task_name   TEXT,
-        task_type   TEXT,
-        models      TEXT
+        run_id          TEXT PRIMARY KEY,
+        created_at      TEXT NOT NULL,
+        description     TEXT,
+        task_name       TEXT,
+        task_type       TEXT,
+        models          TEXT,
+        ollama_options  TEXT
     );
 
     CREATE TABLE IF NOT EXISTS results (
@@ -56,6 +57,11 @@ def init_db() -> None:
         cpu_util     REAL
     );
     """)
+    # 기존 DB 마이그레이션: ollama_options 컬럼 추가
+    try:
+        conn.execute("ALTER TABLE runs ADD COLUMN ollama_options TEXT")
+    except sqlite3.OperationalError:
+        pass  # 이미 존재
     conn.commit()
     conn.close()
 
@@ -63,7 +69,7 @@ def init_db() -> None:
 def save_run(config: RunConfig) -> None:
     conn = _conn()
     conn.execute(
-        "INSERT INTO runs VALUES (?, ?, ?, ?, ?, ?)",
+        "INSERT INTO runs VALUES (?, ?, ?, ?, ?, ?, ?)",
         (
             config.run_id,
             config.created_at,
@@ -71,6 +77,7 @@ def save_run(config: RunConfig) -> None:
             config.task_name,
             config.task_type,
             json.dumps(config.models),
+            json.dumps(config.ollama_options) if config.ollama_options else None,
         ),
     )
     conn.commit()
@@ -147,6 +154,8 @@ def get_run(run_id: str) -> Optional[Dict]:
         return None
     d = dict(row)
     d["models"] = json.loads(d["models"])
+    if d.get("ollama_options"):
+        d["ollama_options"] = json.loads(d["ollama_options"])
     return d
 
 
