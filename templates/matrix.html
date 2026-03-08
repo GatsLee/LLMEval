@@ -1,0 +1,323 @@
+{% extends "base.html" %}
+{% block title %}Score Matrix - LLMEval{% endblock %}
+{% block content %}
+<div class="section-title">Score Matrix</div>
+
+<!-- Stats cards -->
+<div class="stats-row mb-16">
+    <div class="stat-card">
+        <div class="label">Models</div>
+        <div class="value">{{ models|length }}</div>
+        <div class="dim" style="font-size:11px;">{{ llm_models|length }} LLM / {{ emb_models|length }} Emb</div>
+    </div>
+    <div class="stat-card">
+        <div class="label">Tasks</div>
+        <div class="value">{{ tasks|length }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="label">Best Model</div>
+        <div class="value" style="font-size:16px;">{{ models_ranked[0] if models_ranked else '—' }}</div>
+        {% if models_ranked %}
+        <div class="dim" style="font-size:11px;">{{ "%.3f"|format(model_stats[models_ranked[0]].avg) }} avg (95% CI: {{ "%.2f"|format(model_stats[models_ranked[0]].ci_low) }}–{{ "%.2f"|format(model_stats[models_ranked[0]].ci_high) }})</div>
+        {% endif %}
+    </div>
+    <div class="stat-card">
+        <div class="label">Score Range</div>
+        {% if models_ranked|length >= 2 %}
+        {% set best = model_stats[models_ranked[0]].avg %}
+        {% set worst = model_stats[models_ranked[-1]].avg %}
+        <div class="value" style="font-size:18px;">{{ "%.2f"|format(worst) }} – {{ "%.2f"|format(best) }}</div>
+        <div class="dim" style="font-size:11px;">Spread: {{ "%.2f"|format(best - worst) }}</div>
+        {% else %}
+        <div class="value dim">—</div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="mb-16" style="display:flex; gap:16px; align-items:center; flex-wrap:wrap;">
+    <div style="display:flex; gap:8px; align-items:center;">
+        <span class="dim">Judge:</span>
+        <a href="/matrix" class="filter-btn {{ 'active' if not selected_judge else '' }}">All</a>
+        <a href="/matrix?judge=ollama" class="filter-btn {{ 'active' if selected_judge == 'ollama' else '' }}">Ollama</a>
+        <a href="/matrix?judge=claude" class="filter-btn {{ 'active' if selected_judge == 'claude' else '' }}" style="{{ 'background:#1a237e;color:#90caf9;border-color:#3949ab;' if selected_judge == 'claude' else '' }}">Claude</a>
+        {% for j in available_judges %}
+        {% if j not in ['ollama:llama3.1:8b'] and ':' in j %}
+        <a href="/matrix?judge={{ j }}" class="filter-btn {{ 'active' if selected_judge == j else '' }}" style="font-size:11px;">{{ j }}</a>
+        {% endif %}
+        {% endfor %}
+    </div>
+</div>
+<div class="mb-16" style="display:flex; gap:16px; align-items:center; flex-wrap:wrap;">
+    <div style="display:flex; gap:8px; align-items:center;">
+        <span class="dim">Models:</span>
+        <button onclick="filterModels('all')" class="filter-btn active" id="btn-all">All</button>
+        <button onclick="filterModels('llm')" class="filter-btn" id="btn-llm">LLM Only</button>
+        <button onclick="filterModels('emb')" class="filter-btn" id="btn-emb">Embedding Only</button>
+    </div>
+    <div style="display:flex; gap:8px; align-items:center;">
+        <span class="dim">Tasks:</span>
+        <button onclick="filterTasks('all')" class="filter-btn active" id="tbtn-all">All</button>
+        {% for cat in task_categories %}
+        <button onclick="filterTasks('{{ cat }}')" class="filter-btn" id="tbtn-{{ cat | replace('/', '-') | replace(' ', '-') }}">{{ cat }}</button>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Heatmap table -->
+<div style="overflow-x:auto; margin-bottom:24px;">
+<table id="heatmap-table" style="font-size:12px;">
+    <thead>
+        <tr>
+            <th style="position:sticky;left:0;background:var(--border);z-index:2;min-width:140px;">Model</th>
+            {% for task in tasks %}
+            <th class="task-header" data-category="{{ task_cat_map[task] }}"
+                style="font-size:9px; padding:4px 2px; text-align:center; min-width:48px; height:140px; vertical-align:bottom;">
+                <div style="writing-mode:vertical-rl; white-space:nowrap; max-height:130px; overflow:hidden; text-overflow:ellipsis;">{{ task }}</div>
+            </th>
+            {% endfor %}
+            <th style="background:#1b1b30;min-width:55px;text-align:center;vertical-align:bottom;height:140px;">AVG</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for model in models_ranked %}
+        <tr data-model="{{ model }}" data-type="{{ 'emb' if model in emb_models else 'llm' }}">
+            <td style="position:sticky;left:0;background:var(--card);z-index:1;font-weight:bold;white-space:nowrap;font-size:11px;">
+                {{ model }}
+                {% if model in emb_models %}<span class="tag embedding" style="margin-left:4px;">EMB</span>{% endif %}
+            </td>
+            {% for task in tasks %}
+            {% set key = model + "|" + task %}
+            <td data-category="{{ task_cat_map[task] }}"
+                {% if key in cells %}
+                data-score="{{ cells[key].avg }}" style="text-align:center; cursor:help; padding:6px 3px;"
+                title="{{ model }}&#10;{{ task }}&#10;Score: {{ '%.3f'|format(cells[key].avg) }} ± {{ '%.3f'|format(cells[key].std) }}&#10;95% CI: [{{ '%.2f'|format(cells[key].ci_low) }}, {{ '%.2f'|format(cells[key].ci_high) }}]&#10;N: {{ cells[key].n }}">
+                {{ "%.2f"|format(cells[key].avg) }}
+                {% else %}
+                style="text-align:center; padding:6px 3px; color:var(--text-dim);">—
+                {% endif %}
+            </td>
+            {% endfor %}
+            <td style="text-align:center; background:#1b1b30; font-weight:bold; padding:6px 3px;"
+                data-score="{{ model_stats[model].avg }}">
+                {{ "%.2f"|format(model_stats[model].avg) }}
+            </td>
+        </tr>
+        {% endfor %}
+        <!-- Task averages row -->
+        <tr style="border-top:2px solid var(--accent);">
+            <td style="position:sticky;left:0;background:var(--border);z-index:1;font-weight:bold;font-size:11px;">TASK AVG</td>
+            {% for task in tasks %}
+            <td data-category="{{ task_cat_map[task] }}" style="text-align:center; font-weight:bold; padding:6px 3px;" data-score="{{ task_avgs[task] }}">
+                {{ "%.2f"|format(task_avgs[task]) }}
+            </td>
+            {% endfor %}
+            <td></td>
+        </tr>
+    </tbody>
+</table>
+</div>
+
+<!-- Charts row -->
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:24px;">
+    <div class="stat-card" style="padding:16px;">
+        <div class="label mb-16">Model Ranking (with 95% CI)</div>
+        <div style="position:relative; height:{{ [models|length * 36, 250] | max }}px;">
+            <canvas id="barChart"></canvas>
+        </div>
+    </div>
+    <div class="stat-card" style="padding:16px;">
+        <div class="label mb-16">Category Radar (Top 5 LLM)</div>
+        <div style="position:relative; height:350px;">
+            <canvas id="radarChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- CI Summary Table -->
+<div class="section-title">Confidence Intervals (95%)</div>
+<table style="margin-bottom:24px;">
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Model</th>
+            <th>Type</th>
+            <th>Avg Score</th>
+            <th>95% CI</th>
+            <th>CI Width</th>
+            <th>Std Dev</th>
+            <th>N (evals)</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for model in models_ranked %}
+        {% set s = model_stats[model] %}
+        <tr>
+            <td class="dim">{{ loop.index }}</td>
+            <td style="font-weight:bold;">{{ model }}</td>
+            <td>
+                {% if model in emb_models %}
+                <span class="tag embedding">EMB</span>
+                {% else %}
+                <span class="tag">LLM</span>
+                {% endif %}
+            </td>
+            <td class="{{ 'good' if s.avg >= 4.0 else ('warn' if s.avg >= 2.5 else 'bad') }}">
+                {{ "%.3f"|format(s.avg) }}
+            </td>
+            <td>
+                <span class="dim">[</span>{{ "%.3f"|format(s.ci_low) }}<span class="dim"> – </span>{{ "%.3f"|format(s.ci_high) }}<span class="dim">]</span>
+            </td>
+            <td class="dim">&plusmn; {{ "%.3f"|format((s.ci_high - s.ci_low) / 2) }}</td>
+            <td class="dim">{{ "%.3f"|format(s.std) }}</td>
+            <td class="dim">{{ s.n }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<script>
+// Color heatmap cells based on score
+document.querySelectorAll('[data-score]').forEach(cell => {
+    const score = parseFloat(cell.dataset.score);
+    if (isNaN(score)) return;
+    const ratio = Math.max(0, Math.min(score / 5, 1));
+    const hue = ratio * 120;
+    cell.style.backgroundColor = `hsla(${hue}, 55%, 30%, 0.35)`;
+});
+
+// Model type filter
+const embModels = new Set({{ emb_models | tojson }});
+function filterModels(type) {
+    document.querySelectorAll('#btn-all,#btn-llm,#btn-emb').forEach(b => b.classList.remove('active'));
+    document.getElementById('btn-' + type).classList.add('active');
+    document.querySelectorAll('#heatmap-table tbody tr[data-model]').forEach(row => {
+        const model = row.dataset.model;
+        if (type === 'all') { row.style.display = ''; }
+        else if (type === 'llm') { row.style.display = embModels.has(model) ? 'none' : ''; }
+        else if (type === 'emb') { row.style.display = embModels.has(model) ? '' : 'none'; }
+    });
+}
+
+// Task category filter
+function filterTasks(cat) {
+    // Update active button
+    document.querySelectorAll('[id^="tbtn-"]').forEach(b => b.classList.remove('active'));
+    if (cat === 'all') {
+        document.getElementById('tbtn-all').classList.add('active');
+    } else {
+        const btnId = 'tbtn-' + cat.replace(/\//g, '-').replace(/ /g, '-');
+        const btn = document.getElementById(btnId);
+        if (btn) btn.classList.add('active');
+    }
+
+    // Toggle column visibility via nth-child (skip first col = model name)
+    const headers = document.querySelectorAll('#heatmap-table thead th.task-header');
+    headers.forEach((th, idx) => {
+        const colCat = th.dataset.category;
+        const show = (cat === 'all' || colCat === cat);
+        th.style.display = show ? '' : 'none';
+        // Toggle matching td in every row (col index = idx + 1, 1-based after model col)
+        document.querySelectorAll(`#heatmap-table tbody tr`).forEach(row => {
+            const cells = row.querySelectorAll('td[data-category]');
+            if (cells[idx]) cells[idx].style.display = show ? '' : 'none';
+        });
+    });
+}
+
+// Bar chart — model ranking with CI error bars
+const barData = {{ bar_chart_json | safe }};
+const barCtx = document.getElementById('barChart').getContext('2d');
+const ciRanges = barData.labels.map((_, i) => [barData.ci_low[i], barData.ci_high[i]]);
+
+new Chart(barCtx, {
+    type: 'bar',
+    data: {
+        labels: barData.labels,
+        datasets: [
+            {
+                label: '95% CI Range',
+                data: ciRanges,
+                backgroundColor: 'rgba(255,255,255,0.08)',
+                borderColor: 'rgba(255,255,255,0.25)',
+                borderWidth: 1,
+                barPercentage: 0.3,
+                categoryPercentage: 0.8,
+                order: 1,
+            },
+            {
+                label: 'Avg Score',
+                data: barData.scores,
+                backgroundColor: barData.colors.map(c => c + 'cc'),
+                borderColor: barData.colors,
+                borderWidth: 1,
+                barPercentage: 0.7,
+                categoryPercentage: 0.8,
+                order: 2,
+            },
+        ]
+    },
+    options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                callbacks: {
+                    label: function(ctx) {
+                        const i = ctx.dataIndex;
+                        if (ctx.datasetIndex === 0) {
+                            return `95% CI: [${barData.ci_low[i].toFixed(3)}, ${barData.ci_high[i].toFixed(3)}]`;
+                        }
+                        return `Score: ${barData.scores[i].toFixed(3)}`;
+                    }
+                }
+            }
+        },
+        scales: {
+            x: {
+                min: 0, max: 5,
+                grid: { color: '#2a2a3e' },
+                ticks: { color: '#888' },
+            },
+            y: {
+                grid: { display: false },
+                ticks: { color: '#e0e0e0', font: { size: 11 } },
+            }
+        }
+    }
+});
+
+// Radar chart — category comparison
+const radarData = {{ radar_chart_json | safe }};
+if (radarData.datasets.length > 0) {
+    new Chart(document.getElementById('radarChart'), {
+        type: 'radar',
+        data: {
+            labels: radarData.categories,
+            datasets: radarData.datasets,
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                r: {
+                    min: 0, max: 5,
+                    grid: { color: '#2a2a3e' },
+                    angleLines: { color: '#2a2a3e' },
+                    ticks: { color: '#888', backdropColor: 'transparent', stepSize: 1 },
+                    pointLabels: { color: '#e0e0e0', font: { size: 11 } },
+                }
+            },
+            plugins: {
+                legend: {
+                    labels: { color: '#e0e0e0', font: { size: 11 } },
+                    position: 'bottom',
+                }
+            }
+        }
+    });
+}
+</script>
+{% endblock %}

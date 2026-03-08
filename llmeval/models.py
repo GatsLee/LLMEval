@@ -40,6 +40,7 @@ class RunConfig(BaseModel):
     models: List[str]
     created_at: str
     ollama_options: Optional[Dict[str, Any]] = None
+    judge: Optional[str] = None
 
 
 class HWSample(BaseModel):

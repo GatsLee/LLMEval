@@ -7,9 +7,7 @@ import json
 import re
 import statistics
 
-import ollama
-
-JUDGE_MODEL = "llama3.1:8b"
+from ..judge import judge_call, get_default
 
 _PROMPTS = {
     "faithfulness": """\
@@ -77,7 +75,6 @@ def evaluate(
     question: str = "",
     reference: str = "",
     instruction: str = "",
-    judge_model: str = JUDGE_MODEL,
     n_trials: int = 3,
     **kwargs,
 ) -> dict:
@@ -96,12 +93,7 @@ def evaluate(
     reasons = []
     for _ in range(n_trials):
         try:
-            result = ollama.chat(
-                model=judge_model,
-                messages=[{"role": "user", "content": prompt}],
-                options={"temperature": 0},
-            )
-            raw = result["message"]["content"]
+            raw = judge_call(prompt)
             score = _parse_score(raw)
             scores.append(score)
             match = re.search(r'"reason"\s*:\s*"([^"]+)"', raw)
@@ -116,5 +108,5 @@ def evaluate(
         "scores_raw": scores,
         "reason": reasons[0] if reasons else "",
         "criteria": criteria,
-        "judge_model": judge_model,
+        "judge_model": get_default().label(),
     }

@@ -1,0 +1,219 @@
+{% if not results %}
+<p class="dim">No results found.</p>
+{% else %}
+
+<!-- Model filter -->
+{% if models|length > 1 %}
+<div class="mb-16" style="display:flex; gap:8px; align-items:center;">
+    <span class="dim">Model:</span>
+    <select id="detail-model-filter" onchange="filterDetailModel(this.value)" style="min-width:160px;">
+        <option value="all">All Models</option>
+        {% for m in models %}
+        <option value="{{ m }}">{{ m }}</option>
+        {% endfor %}
+    </select>
+</div>
+{% endif %}
+
+<!-- Judge badge -->
+<div class="mb-16" style="display:flex; gap:12px; align-items:center;">
+    <span class="dim">Judge:</span>
+    {% if judge and judge.startswith('claude:') %}
+    <span class="tag" style="background:#1a237e;color:#90caf9;">{{ judge }}</span>
+    {% elif judge %}
+    <span class="tag">{{ judge }}</span>
+    {% else %}
+    <span class="tag">ollama:llama3.1:8b</span>
+    {% endif %}
+    <span class="dim" style="font-size:11px;">{{ results|length }} items</span>
+</div>
+
+{% for r in results %}
+<div class="detail-item" data-model="{{ r.model }}" style="
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 12px;
+    overflow: hidden;
+">
+    <!-- Header row -->
+    <div style="
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 16px;
+        background: var(--border);
+        cursor: pointer;
+    " onclick="this.parentElement.querySelector('.detail-body').classList.toggle('collapsed')">
+        <span style="font-weight:bold; font-size:12px; min-width:100px;">{{ r.model }}</span>
+        <span class="dim" style="font-size:11px;">#{{ r.input_idx + 1 }}</span>
+        {% if r.score is not none %}
+        <span style="
+            font-weight: bold;
+            font-size: 13px;
+            {% if r.score >= 4.0 %}color: var(--accent2);
+            {% elif r.score >= 2.5 %}color: var(--warn);
+            {% else %}color: var(--bad);{% endif %}
+        ">{{ "%.2f"|format(r.score) }}</span>
+        {% endif %}
+
+        <!-- Inline dimension scores if available -->
+        {% if r.score_detail %}
+        <div style="display:flex; gap:8px; margin-left:auto; font-size:11px;">
+            {% for key in ['completeness', 'accuracy', 'fluency', 'conciseness',
+                           'harmfulness', 'refusal', 'info_safety',
+                           'instruction_drift', 'consistency', 'context_retention',
+                           'faithfulness_score', 'context_relevance', 'answer_relevance',
+                           'hallucination_rate'] %}
+            {% if key in r.score_detail %}
+            <span class="dim">{{ key[:4] }}:</span>
+            <span style="{% if r.score_detail[key] is number %}
+                {% if key == 'hallucination_rate' %}
+                    {% if r.score_detail[key] <= 0.2 %}color:var(--accent2){% elif r.score_detail[key] <= 0.5 %}color:var(--warn){% else %}color:var(--bad){% endif %}
+                {% else %}
+                    {% set v = r.score_detail[key] %}
+                    {% if v >= 4 %}color:var(--accent2){% elif v >= 2.5 %}color:var(--warn){% else %}color:var(--bad){% endif %}
+                {% endif %}
+            {% endif %}">
+                {% if r.score_detail[key] is number %}{{ "%.2f"|format(r.score_detail[key]) }}{% else %}{{ r.score_detail[key] }}{% endif %}
+            </span>
+            {% endif %}
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <span class="dim" style="margin-left:8px; font-size:10px;">▼</span>
+    </div>
+
+    <!-- Collapsible body -->
+    <div class="detail-body collapsed">
+        <div style="padding: 12px 16px;">
+            <!-- Reason / Feedback -->
+            {% if r.score_detail and r.score_detail.reason %}
+            <div style="margin-bottom: 12px;">
+                <div style="font-size:11px; color:var(--accent); text-transform:uppercase; margin-bottom:4px;">Judge Feedback</div>
+                <div style="
+                    background: var(--card);
+                    border-left: 3px solid {% if judge and judge.startswith('claude:') %}#5c6bc0{% else %}var(--accent){% endif %};
+                    padding: 10px 14px;
+                    border-radius: 0 6px 6px 0;
+                    font-size: 13px;
+                    line-height: 1.7;
+                ">{{ r.score_detail.reason }}</div>
+            </div>
+            {% endif %}
+
+            <!-- Dimension breakdown -->
+            {% if r.score_detail %}
+            <div style="margin-bottom: 12px;">
+                <div style="font-size:11px; color:var(--text-dim); text-transform:uppercase; margin-bottom:6px;">Score Breakdown</div>
+                <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                    {% for key, val in r.score_detail.items() %}
+                    {% if key not in ['reason', 'judge_model', 'scores_raw', 'claim_details', 'num_turns'] and val is not none %}
+                    <div style="
+                        background: var(--card);
+                        border: 1px solid var(--border);
+                        border-radius: 6px;
+                        padding: 6px 12px;
+                        min-width: 80px;
+                        text-align: center;
+                    ">
+                        <div style="font-size:10px; color:var(--text-dim); text-transform:uppercase;">{{ key }}</div>
+                        <div style="font-size:14px; font-weight:bold;
+                            {% if val is number %}
+                                {% if key == 'hallucination_rate' %}
+                                    {% if val <= 0.2 %}color:var(--accent2){% elif val <= 0.5 %}color:var(--warn){% else %}color:var(--bad){% endif %}
+                                {% elif val >= 4 %}color:var(--accent2){% elif val >= 2.5 %}color:var(--warn){% else %}color:var(--bad){% endif %}
+                            {% endif %}
+                        ">
+                            {% if val is number %}{{ "%.2f"|format(val) }}{% elif val is sameas true %}✓{% elif val is sameas false %}✗{% else %}{{ val }}{% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Claim details (hallucination / RAG) -->
+            {% if r.score_detail and r.score_detail.claim_details %}
+            <div style="margin-bottom: 12px;">
+                <div style="font-size:11px; color:var(--text-dim); text-transform:uppercase; margin-bottom:6px;">Claim Verification</div>
+                {% for claim in r.score_detail.claim_details %}
+                <div style="
+                    display: flex;
+                    gap: 8px;
+                    align-items: flex-start;
+                    padding: 6px 0;
+                    border-bottom: 1px solid var(--border);
+                    font-size: 12px;
+                ">
+                    <span style="
+                        min-width: 24px;
+                        text-align: center;
+                        {% if claim.verdict == 'supported' or claim.supported == true %}color:var(--accent2);
+                        {% elif claim.verdict == 'contradicted' or claim.supported == false %}color:var(--bad);
+                        {% else %}color:var(--warn);{% endif %}
+                    ">
+                        {% if claim.verdict == 'supported' or claim.supported == true %}✓
+                        {% elif claim.verdict == 'contradicted' %}✗
+                        {% elif claim.supported == false %}✗
+                        {% else %}?{% endif %}
+                    </span>
+                    <div>
+                        <div>{{ claim.claim }}</div>
+                        {% if claim.reason %}<div class="dim" style="font-size:11px; margin-top:2px;">{{ claim.reason }}</div>{% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Prompt & Response -->
+            <details style="margin-bottom: 8px;">
+                <summary style="font-size:11px; color:var(--text-dim); cursor:pointer; padding:4px 0;">Show Prompt & Response</summary>
+                <div style="margin-top:8px;">
+                    <div style="font-size:10px; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">Prompt</div>
+                    <pre style="
+                        background: var(--card);
+                        border: 1px solid var(--border);
+                        border-radius: 4px;
+                        padding: 8px 12px;
+                        font-size: 12px;
+                        white-space: pre-wrap;
+                        word-break: break-word;
+                        max-height: 200px;
+                        overflow-y: auto;
+                        margin-bottom: 8px;
+                    ">{{ r.prompt or '—' }}</pre>
+                    <div style="font-size:10px; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px;">Response</div>
+                    <pre style="
+                        background: var(--card);
+                        border: 1px solid var(--border);
+                        border-radius: 4px;
+                        padding: 8px 12px;
+                        font-size: 12px;
+                        white-space: pre-wrap;
+                        word-break: break-word;
+                        max-height: 300px;
+                        overflow-y: auto;
+                    ">{{ r.response or '—' }}</pre>
+                </div>
+            </details>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<style>
+.detail-body.collapsed { display: none; }
+</style>
+
+<script>
+function filterDetailModel(model) {
+    document.querySelectorAll('.detail-item').forEach(item => {
+        item.style.display = (model === 'all' || item.dataset.model === model) ? '' : 'none';
+    });
+}
+</script>
+{% endif %}

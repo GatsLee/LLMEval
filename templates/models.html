@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+{% block title %}Models - LLMEval{% endblock %}
+{% block content %}
+<div class="section-title">Ollama Model Manager</div>
+
+<div class="stats-row mb-24">
+    <div class="stat-card">
+        <div class="label">Ollama Status</div>
+        <div class="value" id="ollama-status" style="font-size:16px;">
+            <span class="loading">Checking...</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="label">Installed Models</div>
+        <div class="value" id="model-count">-</div>
+    </div>
+</div>
+
+<div class="stat-card mb-24">
+    <div class="label mb-16">Pull New Model</div>
+    <div style="display:flex; gap:8px; align-items:center;">
+        <input type="text" id="pull-model-name" placeholder="e.g. llama3.1:8b, nomic-embed-text" style="flex:1;">
+        <button onclick="pullModel()">Pull</button>
+    </div>
+    <div id="pull-progress" style="margin-top:12px; display:none;">
+        <div style="background:var(--border); border-radius:4px; height:20px; overflow:hidden;">
+            <div id="pull-bar" style="background:var(--accent); height:100%; width:0%; transition:width 0.3s;"></div>
+        </div>
+        <div id="pull-status" class="dim" style="margin-top:4px; font-size:12px;"></div>
+    </div>
+</div>
+
+<div class="stat-card mb-24">
+    <div class="label mb-16">Pull from HuggingFace
+        <span class="dim" style="font-size:11px; text-transform:none; letter-spacing:0;">— 45K+ GGUF models available</span>
+    </div>
+    <div style="display:flex; gap:8px; align-items:center;">
+        <input type="text" id="hf-model-name" placeholder="e.g. hf.co/bartowski/Llama-3.2-3B-Instruct-GGUF" style="flex:1;">
+        <button onclick="pullHFModel()">Pull</button>
+    </div>
+    <div style="margin-top:16px;">
+        <div class="detail-label">Recommended Models</div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:8px;">
+            <div>
+                <div class="dim" style="font-size:11px; margin-bottom:6px;">LLM</div>
+                <button class="hf-rec-btn" onclick="fillHF('hf.co/bartowski/Llama-3.2-3B-Instruct-GGUF:Q4_K_M')">
+                    <div class="hf-name">Llama 3.2 3B Instruct</div>
+                    <div class="hf-desc">Q4_K_M &middot; ~2.0 GB &middot; Meta</div>
+                </button>
+                <button class="hf-rec-btn" onclick="fillHF('hf.co/Qwen/Qwen2.5-7B-Instruct-GGUF:q4_k_m')" style="margin-top:6px;">
+                    <div class="hf-name">Qwen 2.5 7B Instruct</div>
+                    <div class="hf-desc">Q4_K_M &middot; ~4.7 GB &middot; Alibaba</div>
+                </button>
+                <button class="hf-rec-btn" onclick="fillHF('hf.co/bartowski/DeepSeek-R1-Distill-Qwen-7B-GGUF:Q4_K_M')" style="margin-top:6px;">
+                    <div class="hf-name">DeepSeek-R1 Distill 7B</div>
+                    <div class="hf-desc">Q4_K_M &middot; ~4.7 GB &middot; DeepSeek</div>
+                </button>
+            </div>
+            <div>
+                <div class="dim" style="font-size:11px; margin-bottom:6px;">Embedding</div>
+                <button class="hf-rec-btn" onclick="fillHF('hf.co/compilade/bge-m3-GGUF:q8_0')">
+                    <div class="hf-name">BGE-M3 (Multilingual)</div>
+                    <div class="hf-desc">Q8_0 &middot; ~650 MB &middot; BAAI</div>
+                </button>
+                <button class="hf-rec-btn" onclick="fillHF('hf.co/compilade/bge-small-en-v1.5-GGUF:q8_0')" style="margin-top:6px;">
+                    <div class="hf-name">BGE Small EN v1.5</div>
+                    <div class="hf-desc">Q8_0 &middot; ~45 MB &middot; BAAI</div>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="models-table" hx-get="/api/models/list" hx-trigger="load">
+    <span class="loading">Loading models...</span>
+</div>
+
+<script>
+fetch('/api/models/status')
+    .then(r => r.json())
+    .then(data => {
+        const el = document.getElementById('ollama-status');
+        if (data.running) {
+            el.innerHTML = '<span style="color:var(--accent2);">● Running</span>';
+        } else {
+            el.innerHTML = '<span style="color:var(--bad);">● Stopped</span>' +
+                ' <button onclick="startOllama()" style="margin-left:8px; font-size:11px;">Start</button>';
+        }
+    });
+
+function startOllama() {
+    const el = document.getElementById('ollama-status');
+    el.innerHTML = '<span class="loading">Starting...</span>';
+    fetch('/api/models/start', {method: 'POST'})
+        .then(r => r.json())
+        .then(data => {
+            if (data.started) {
+                el.innerHTML = '<span style="color:var(--accent2);">● Running</span>';
+                htmx.ajax('GET', '/api/models/list', '#models-table');
+            } else {
+                el.innerHTML = '<span style="color:var(--bad);">● Failed to start</span>';
+            }
+        });
+}
+
+function updateModelCount() {
+    const tables = document.querySelectorAll('#models-table tbody');
+    let count = 0;
+    tables.forEach(function(tbody) {
+        const rows = tbody.querySelectorAll('tr');
+        rows.forEach(function(row) {
+            if (!row.querySelector('.dim')) count++;
+        });
+    });
+    document.getElementById('model-count').textContent = count;
+}
+
+document.body.addEventListener('htmx:afterSwap', function(e) {
+    if (e.detail.target.id === 'models-table') {
+        updateModelCount();
+    }
+});
+
+function pullModel() {
+    const name = document.getElementById('pull-model-name').value.trim();
+    if (!name) return;
+
+    const progressDiv = document.getElementById('pull-progress');
+    const bar = document.getElementById('pull-bar');
+    const statusEl = document.getElementById('pull-status');
+    progressDiv.style.display = 'block';
+    bar.style.width = '0%';
+    statusEl.textContent = 'Starting pull...';
+
+    const source = new EventSource('/api/models/pull/' + encodeURIComponent(name));
+    source.onmessage = function(event) {
+        const data = JSON.parse(event.data);
+        if (data.status) statusEl.textContent = data.status;
+        if (data.completed && data.total) {
+            const pct = Math.round((data.completed / data.total) * 100);
+            bar.style.width = pct + '%';
+            const mbDone = (data.completed / 1024 / 1024).toFixed(0);
+            const mbTotal = (data.total / 1024 / 1024).toFixed(0);
+            statusEl.textContent = data.status + ' — ' + pct + '% (' + mbDone + '/' + mbTotal + ' MB)';
+        }
+        if (data.done) {
+            bar.style.width = '100%';
+            statusEl.textContent = 'Pull complete!';
+            statusEl.style.color = 'var(--accent2)';
+            source.close();
+            htmx.ajax('GET', '/api/models/list', '#models-table');
+            setTimeout(function() {
+                progressDiv.style.display = 'none';
+                statusEl.style.color = '';
+            }, 3000);
+        }
+    };
+    source.onerror = function() {
+        statusEl.textContent = 'Pull failed or connection lost.';
+        statusEl.style.color = 'var(--bad)';
+        source.close();
+    };
+}
+
+function fillHF(name) {
+    document.getElementById('hf-model-name').value = name;
+}
+
+function pullHFModel() {
+    let name = document.getElementById('hf-model-name').value.trim();
+    if (!name) return;
+    // Normalize full HuggingFace URLs to hf.co/ format
+    name = name.replace(/^https?:\/\/huggingface\.co\//, 'hf.co/');
+    // Set the main pull input and trigger existing pullModel()
+    document.getElementById('pull-model-name').value = name;
+    pullModel();
+}
+
+function deleteModel(name) {
+    if (!confirm('Delete model "' + name + '"?')) return;
+    fetch('/api/models/delete/' + encodeURIComponent(name), {method: 'DELETE'})
+        .then(r => r.json())
+        .then(function() {
+            htmx.ajax('GET', '/api/models/list', '#models-table');
+        });
+}
+</script>
+{% endblock %}

@@ -14,6 +14,18 @@
         <div class="value" style="font-size:16px;">{{ run.task_name }}</div>
     </div>
     <div class="stat-card">
+        <div class="label">Judge</div>
+        <div class="value" style="font-size:14px;">
+            {% if run.judge and run.judge.startswith('claude:') %}
+            <span style="color:#90caf9;">{{ run.judge }}</span>
+            {% elif run.judge %}
+            {{ run.judge }}
+            {% else %}
+            <span class="dim">ollama:llama3.1:8b</span>
+            {% endif %}
+        </div>
+    </div>
+    <div class="stat-card">
         <div class="label">Date</div>
         <div class="value" style="font-size:14px;">{{ run.created_at }}</div>
     </div>
@@ -29,8 +41,10 @@
 
 <div class="tabs">
     <button class="tab-btn active" onclick="switchTab(this, '/api/run/{{ run.run_id }}/quality')">Quality</button>
+    <button class="tab-btn" onclick="switchTab(this, '/api/run/{{ run.run_id }}/details')">Details</button>
     <button class="tab-btn" onclick="switchTab(this, '/api/run/{{ run.run_id }}/hardware')">Hardware</button>
     <button class="tab-btn" onclick="switchTab(this, '/api/run/{{ run.run_id }}/charts')">Charts</button>
+    <button class="tab-btn" onclick="switchTab(this, '/api/run/{{ run.run_id }}/efficiency')">Efficiency</button>
 </div>
 <div id="tab-content" hx-get="/api/run/{{ run.run_id }}/quality" hx-trigger="load">
     <span class="loading">Loading...</span>

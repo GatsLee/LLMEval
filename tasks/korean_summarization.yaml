@@ -3,7 +3,7 @@ description: |
   주어진 한국어 텍스트를 3문장 이내로 요약하는 태스크.
   ROUGE + LLM fluency judge로 품질 측정.
 type: summarization
-evaluator: rouge
+evaluator: summarization
 
 inputs:
   - text: |

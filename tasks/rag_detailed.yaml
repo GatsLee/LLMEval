@@ -1,0 +1,31 @@
+name: RAG 상세 평가 (Claim-Level)
+description: |
+  컨텍스트 기반 Q&A에서 claim-level 분해 + 검증.
+  충실성, 컨텍스트 관련성, 답변 관련성을 세분화하여 평가.
+type: qa_with_context
+evaluator: rag_detailed
+
+inputs:
+  - context: "세종대왕(1397~1450)은 조선의 제4대 왕으로, 1443년 훈민정음을 창제하였다. 훈민정음은 28자로 구성되었으며, 1446년 반포되었다."
+    question: "훈민정음의 창제 연도와 반포 연도는?"
+    reference: "1443년 창제, 1446년 반포"
+
+  - context: "대한민국의 수도는 서울이다. 서울의 인구는 약 950만명이며, 한강이 도시 중심을 가로지른다. 서울의 면적은 605.2km²이다."
+    question: "서울에 대해 설명해주세요."
+    reference: "수도, 인구 약 950만, 한강, 면적 605.2km²"
+
+  - context: "Python은 1991년 귀도 반 로섬이 개발한 프로그래밍 언어이다. 인터프리터 언어이며, 동적 타이핑을 지원한다. 현재 가장 인기 있는 언어 중 하나이다."
+    question: "Python의 개발자와 특징은?"
+    reference: "귀도 반 로섬, 1991년, 인터프리터, 동적 타이핑"
+
+  - context: "Docker는 컨테이너 기반 가상화 플랫폼이다. 2013년 출시되었으며, Go 언어로 작성되었다. VM과 달리 호스트 OS 커널을 공유한다."
+    question: "Docker와 VM의 차이점은?"
+    reference: "Docker는 호스트 OS 커널 공유, VM은 독립 OS"
+
+  - context: "제주도는 대한민국 최대의 섬으로, 면적은 1,849km²이다. 한라산(1,947m)이 중앙에 위치하며, 2007년 유네스코 세계자연유산에 등재되었다."
+    question: "제주도의 면적과 한라산 높이는?"
+    reference: "면적 1,849km², 한라산 1,947m"
+
+  - context: "Transformer 아키텍처는 2017년 'Attention Is All You Need' 논문에서 제안되었다. Self-attention 메커니즘을 사용하며, RNN/LSTM을 대체했다. GPT, BERT 등의 기반이 되었다."
+    question: "Transformer가 기존 모델과 다른 점은?"
+    reference: "Self-attention 사용, RNN/LSTM 대체"

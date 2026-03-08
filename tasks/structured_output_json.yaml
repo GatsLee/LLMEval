@@ -1,0 +1,58 @@
+name: JSON 구조화 출력 신뢰성 평가
+description: |
+  JSON 스키마 준수율, 파싱 성공률, 필드 정확도를 종합 평가.
+  모델이 정확한 JSON 형식을 생성하는 능력 측정.
+type: structured_output
+evaluator: structured_output
+
+inputs:
+  - request: '다음 정보를 JSON으로 정리하세요. 이름: 김철수, 나이: 28, 직업: 개발자. 필드명은 name, age, job 사용.'
+    reference: '"name"'
+    required_fields: ["name", "age", "job"]
+    schema:
+      type: object
+      required: ["name", "age", "job"]
+      properties:
+        name: {type: string}
+        age: {type: number}
+        job: {type: string}
+
+  - request: '다음 과일 목록을 JSON 배열로 만드세요: 사과, 바나나, 딸기. 각 항목은 {name, color} 형태로.'
+    reference: '"name"'
+    required_fields: ["name", "color"]
+    schema:
+      type: array
+
+  - request: '서울의 날씨 정보를 JSON으로 표현하세요. 필드: city, temperature(숫자), condition(문자열), humidity(숫자). 임의의 값 사용 가능.'
+    reference: '"city"'
+    required_fields: ["city", "temperature", "condition", "humidity"]
+    schema:
+      type: object
+      required: ["city", "temperature", "condition", "humidity"]
+      properties:
+        city: {type: string}
+        temperature: {type: number}
+        condition: {type: string}
+        humidity: {type: number}
+
+  - request: '다음 학생 성적을 JSON으로 정리: 수학 95점, 영어 88점, 과학 92점. 필드명은 subject와 score로.'
+    reference: '"subject"'
+    required_fields: ["subject", "score"]
+    schema:
+      type: array
+
+  - request: '다음 API 응답 형식의 JSON을 생성하세요: status(문자열: "success" 또는 "error"), data(객체), message(문자열). data 안에 id(숫자)와 name(문자열) 포함.'
+    reference: '"status"'
+    required_fields: ["status", "data", "message"]
+    schema:
+      type: object
+      required: ["status", "data", "message"]
+      properties:
+        status: {type: string}
+        data: {type: object}
+        message: {type: string}
+
+  - request: '빈 JSON 객체를 반환하세요. 다른 텍스트 없이 오직 {} 만 출력하세요.'
+    reference: '{}'
+    schema:
+      type: object

@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Tasks - LLMEval{% endblock %}
+{% block content %}
+<div class="stats-row">
+    <div class="stat-card">
+        <div class="label">Total Tasks</div>
+        <div class="value">{{ total_tasks }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="label">Categories</div>
+        <div class="value">{{ categories | length }}</div>
+    </div>
+</div>
+
+<div class="section-title">Evaluation Task Catalog</div>
+<p class="dim mb-24" style="font-size: 12px;">
+    Each task defines a set of inputs, an evaluator, and the metrics it produces.
+    Click a task to see details.
+</p>
+
+{% for cat_name, tasks in categories %}
+<div class="mb-24">
+    <h3 style="color: var(--accent); margin-bottom: 12px; font-size: 14px;
+               text-transform: uppercase; letter-spacing: 1px;">
+        {{ cat_name }} <span class="dim" style="font-size: 12px;">({{ tasks | length }})</span>
+    </h3>
+
+    {% for task in tasks %}
+    <details class="task-card">
+        <summary>
+            <span style="flex: 1; font-weight: bold;">{{ task.name }}</span>
+            <span class="tag{% if task.evaluator.startswith('embedding') %} embedding{% endif %}">
+                {{ task.evaluator }}
+            </span>
+            {% if task.judge_criteria %}
+            <span class="tag">{{ task.judge_criteria }}</span>
+            {% endif %}
+            <span class="dim" style="font-size: 11px;">{{ task.input_count }} inputs</span>
+        </summary>
+        <div class="task-detail">
+            <p class="dim" style="margin: 12px 0; white-space: pre-line; font-size: 13px;">{{ task.description }}</p>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px;">
+                <div>
+                    <div class="detail-label">Metrics Produced</div>
+                    <ul style="list-style: none; padding: 0;">
+                        {% for m in task.metrics %}
+                        <li style="padding: 2px 0; font-size: 12px;">
+                            <span style="color: var(--accent);">&#x2022;</span> {{ m }}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <div>
+                    <div class="detail-label">Input Schema</div>
+                    <ul style="list-style: none; padding: 0;">
+                        {% for f in task.input_fields %}
+                        <li style="padding: 2px 0; font-size: 12px;">
+                            <code style="background: var(--border); padding: 1px 6px;
+                                         border-radius: 3px; font-size: 11px;">{{ f }}</code>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+
+            <div style="margin-top: 12px; font-size: 11px; color: var(--text-dim);">
+                File: <code>tasks/{{ task.filename }}</code> &middot;
+                Type: <code>{{ task.type }}</code>
+            </div>
+        </div>
+    </details>
+    {% endfor %}
+</div>
+{% endfor %}
+{% endblock %}

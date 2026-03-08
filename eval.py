@@ -30,6 +30,7 @@ def run(
     models: str = typer.Option(..., "--models", "-m", help="모델 목록 (콤마 구분, 예: llama3.1:8b,mistral:7b)"),
     description: str = typer.Option("", "--description", "-d", help="실험 설명"),
     num_gpu: int = typer.Option(-1, "--num-gpu", help="GPU 레이어 수 (-1=자동, 0=CPU, 99=전체 GPU)"),
+    judge: str = typer.Option("", "--judge", "-j", help="Judge 백엔드 (예: claude:sonnet, ollama:llama3.1:8b)"),
 ):
     """태스크 실험 실행 (추론 + HW 프로파일링 + 평가)."""
     from llmeval.runner import run_experiment
@@ -40,6 +41,8 @@ def run(
     info = f"[bold]태스크:[/] {task}\n[bold]모델:[/] {', '.join(model_list)}"
     if num_gpu >= 0:
         info += f"\n[bold]num_gpu:[/] {num_gpu}"
+    if judge:
+        info += f"\n[bold]judge:[/] {judge}"
 
     console.print(Panel(info, title="[bold cyan]LLMEval 실험 시작", box=box.ROUNDED))
 
@@ -48,7 +51,8 @@ def run(
         cli_options["num_gpu"] = num_gpu
 
     run_id = run_experiment(task, model_list, description, console=console,
-                            cli_options_override=cli_options or None)
+                            cli_options_override=cli_options or None,
+                            judge_spec=judge or None)
     console.print(f"\n[bold green]완료! run_id:[/] [cyan]{run_id}[/]")
     console.print()
     show_report(run_id)

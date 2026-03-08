@@ -1,0 +1,42 @@
+<div class="section-title">Cost-Efficiency Analysis</div>
+
+<table>
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Model</th>
+            <th>Avg Score</th>
+            <th>VRAM (GB)</th>
+            <th>Avg t/s</th>
+            <th>Avg TTFT</th>
+            <th>Efficiency Score</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for r in rows %}
+        <tr>
+            <td class="dim">{{ loop.index }}</td>
+            <td>{{ r.model }}</td>
+            <td class="{{ 'good' if r.avg_score >= 4.0 else ('warn' if r.avg_score >= 2.5 else 'bad') }}">
+                {{ "%.2f"|format(r.avg_score) }}
+            </td>
+            <td>{{ "%.2f"|format(r.vram_gb) }}GB</td>
+            <td>{{ "%.1f"|format(r.avg_tps) }}</td>
+            <td>{{ "%.0f"|format(r.avg_ttft_ms) }}ms</td>
+            <td style="color: var(--accent); font-weight: bold;">{{ "%.4f"|format(r.efficiency_score) }}</td>
+        </tr>
+        {% endfor %}
+        {% if not rows %}
+        <tr><td colspan="7" class="dim">No data</td></tr>
+        {% endif %}
+    </tbody>
+</table>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;">
+    <div>
+        <img src="/api/run/{{ run_id }}/chart/pareto_vram.png" class="chart-img" alt="Pareto VRAM">
+    </div>
+    <div>
+        <img src="/api/run/{{ run_id }}/chart/pareto_speed.png" class="chart-img" alt="Pareto Speed">
+    </div>
+</div>

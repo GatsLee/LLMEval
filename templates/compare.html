@@ -1,68 +1,152 @@
 {% extends "base.html" %}
-{% block title %}Compare - LLMEval{% endblock %}
+{% block title %}Compare Models - LLMEval{% endblock %}
 {% block content %}
-<div class="section-title">Compare Two Runs</div>
+<div class="section-title">Compare Two Models</div>
 
 <form method="GET" action="/compare" class="mb-24" style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
-    <label class="dim">Run A:</label>
-    <select name="a">
+    <label class="dim">Model A:</label>
+    <select name="a" style="min-width:180px;">
         <option value="">Select...</option>
-        {% for r in runs %}
-        <option value="{{ r.run_id }}" {% if a == r.run_id %}selected{% endif %}>
-            {{ r.run_id }} — {{ r.description or r.task_name }}
-        </option>
-        {% endfor %}
+        {% if llm_models %}
+        <optgroup label="LLM">
+            {% for m in llm_models %}
+            <option value="{{ m }}" {% if a == m %}selected{% endif %}>{{ m }}</option>
+            {% endfor %}
+        </optgroup>
+        {% endif %}
+        {% if emb_models %}
+        <optgroup label="Embedding">
+            {% for m in emb_models %}
+            <option value="{{ m }}" {% if a == m %}selected{% endif %}>{{ m }}</option>
+            {% endfor %}
+        </optgroup>
+        {% endif %}
     </select>
-    <label class="dim">Run B:</label>
-    <select name="b">
+    <span class="dim" style="font-size:18px;">vs</span>
+    <label class="dim">Model B:</label>
+    <select name="b" style="min-width:180px;">
         <option value="">Select...</option>
-        {% for r in runs %}
-        <option value="{{ r.run_id }}" {% if b == r.run_id %}selected{% endif %}>
-            {{ r.run_id }} — {{ r.description or r.task_name }}
-        </option>
-        {% endfor %}
+        {% if llm_models %}
+        <optgroup label="LLM">
+            {% for m in llm_models %}
+            <option value="{{ m }}" {% if b == m %}selected{% endif %}>{{ m }}</option>
+            {% endfor %}
+        </optgroup>
+        {% endif %}
+        {% if emb_models %}
+        <optgroup label="Embedding">
+            {% for m in emb_models %}
+            <option value="{{ m }}" {% if b == m %}selected{% endif %}>{{ m }}</option>
+            {% endfor %}
+        </optgroup>
+        {% endif %}
     </select>
     <button type="submit">Compare</button>
 </form>
 
 {% if compare_data %}
+{% set pa = compare_data.profile_a %}
+{% set pb = compare_data.profile_b %}
+
+<!-- Overview cards -->
 <div class="stats-row mb-16">
-    <div class="stat-card">
-        <div class="label">Run A</div>
-        <div class="value" style="font-size:13px;">{{ compare_data.run_a.description }}</div>
+    <div class="stat-card" style="border-top:3px solid var(--accent);">
+        <div class="label">{{ pa.model }}</div>
+        <div class="value">{{ "%.2f"|format(pa.overall_avg_score) }}</div>
+        <div class="dim" style="font-size:11px;">
+            {{ pa.task_count }} tasks &middot; {{ pa.total_evaluations }} evals &middot;
+            {{ "%.1f"|format(pa.overall_avg_tps) }} t/s
+        </div>
     </div>
-    <div class="stat-card">
-        <div class="label">Run B</div>
-        <div class="value" style="font-size:13px;">{{ compare_data.run_b.description }}</div>
+    <div class="stat-card" style="text-align:center; flex:0 0 120px;">
+        <div class="label">Score</div>
+        {% set delta_overall = pa.overall_avg_score - pb.overall_avg_score %}
+        <div class="value {{ 'good' if delta_overall > 0.01 else ('bad' if delta_overall < -0.01 else 'dim') }}" style="font-size:20px;">
+            {{ "%+.2f"|format(delta_overall) }}
+        </div>
+        <div class="dim" style="font-size:11px;">
+            {{ compare_data.wins_a }}W-{{ compare_data.ties }}T-{{ compare_data.wins_b }}L
+        </div>
+    </div>
+    <div class="stat-card" style="border-top:3px solid var(--accent2);">
+        <div class="label">{{ pb.model }}</div>
+        <div class="value">{{ "%.2f"|format(pb.overall_avg_score) }}</div>
+        <div class="dim" style="font-size:11px;">
+            {{ pb.task_count }} tasks &middot; {{ pb.total_evaluations }} evals &middot;
+            {{ "%.1f"|format(pb.overall_avg_tps) }} t/s
+        </div>
     </div>
 </div>
 
+<!-- Hardware comparison -->
+<div class="stats-row mb-24">
+    <div class="stat-card">
+        <div class="label">VRAM Peak</div>
+        <div style="display:flex; justify-content:space-between; margin-top:4px;">
+            <span style="color:var(--accent);">{{ "%.0f"|format(pa.hw.vram_peak_mb) }}MB</span>
+            <span style="color:var(--accent2);">{{ "%.0f"|format(pb.hw.vram_peak_mb) }}MB</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="label">GPU Power</div>
+        <div style="display:flex; justify-content:space-between; margin-top:4px;">
+            <span style="color:var(--accent);">{{ "%.0f"|format(pa.hw.gpu_power) }}W</span>
+            <span style="color:var(--accent2);">{{ "%.0f"|format(pb.hw.gpu_power) }}W</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="label">GPU Temp</div>
+        <div style="display:flex; justify-content:space-between; margin-top:4px;">
+            <span style="color:var(--accent);">{{ "%.0f"|format(pa.hw.gpu_temp) }}&deg;C</span>
+            <span style="color:var(--accent2);">{{ "%.0f"|format(pb.hw.gpu_temp) }}&deg;C</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="label">RAM Peak</div>
+        <div style="display:flex; justify-content:space-between; margin-top:4px;">
+            <span style="color:var(--accent);">{{ "%.0f"|format(pa.hw.ram_peak_mb) }}MB</span>
+            <span style="color:var(--accent2);">{{ "%.0f"|format(pb.hw.ram_peak_mb) }}MB</span>
+        </div>
+    </div>
+</div>
+
+<!-- Per-task comparison table -->
 <table>
     <thead>
         <tr>
-            <th>Model</th>
-            <th>Score A</th>
-            <th>Score B</th>
-            <th>&Delta; Score</th>
-            <th>t/s A</th>
-            <th>t/s B</th>
+            <th style="width:35%;">Task</th>
+            <th style="color:var(--accent);">{{ pa.model }}</th>
+            <th style="color:var(--accent2);">{{ pb.model }}</th>
+            <th>&Delta;</th>
+            <th style="color:var(--accent);">t/s</th>
+            <th style="color:var(--accent2);">t/s</th>
+            <th>Winner</th>
         </tr>
     </thead>
     <tbody>
-        {% for row in compare_data.rows %}
+        {% for row in compare_data.task_rows %}
         <tr>
-            <td>{{ row.model }}</td>
+            <td>{{ row.task_name }}</td>
             <td>{% if row.score_a is not none %}{{ "%.2f"|format(row.score_a) }}{% else %}&mdash;{% endif %}</td>
             <td>{% if row.score_b is not none %}{{ "%.2f"|format(row.score_b) }}{% else %}&mdash;{% endif %}</td>
             <td>
                 {% if row.delta is not none %}
-                <span class="{{ 'positive' if row.delta > 0 else ('negative' if row.delta < 0 else 'dim') }}">
+                <span class="{{ 'good' if row.delta > 0.01 else ('bad' if row.delta < -0.01 else 'dim') }}">
                     {{ "%+.2f"|format(row.delta) }}
                 </span>
                 {% else %}&mdash;{% endif %}
             </td>
-            <td>{{ "%.1f"|format(row.tps_a) }}</td>
-            <td>{{ "%.1f"|format(row.tps_b) }}</td>
+            <td class="dim">{{ "%.1f"|format(row.tps_a) if row.tps_a else "&mdash;" }}</td>
+            <td class="dim">{{ "%.1f"|format(row.tps_b) if row.tps_b else "&mdash;" }}</td>
+            <td>
+                {% if row.winner == "a" %}
+                <span style="color:var(--accent);">A</span>
+                {% elif row.winner == "b" %}
+                <span style="color:var(--accent2);">B</span>
+                {% elif row.score_a is not none %}
+                <span class="dim">tie</span>
+                {% else %}&mdash;{% endif %}
+            </td>
         </tr>
         {% endfor %}
     </tbody>

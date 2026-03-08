@@ -1,0 +1,76 @@
+<div class="section-title" style="display: flex; align-items: center; gap: 8px;">
+    LLM Models
+    <span class="tag" style="font-size: 10px;">{{ llm_models | length }}</span>
+</div>
+<table class="mb-24">
+    <thead>
+        <tr>
+            <th>Model</th>
+            <th>Size</th>
+            <th>Params</th>
+            <th>Format</th>
+            <th>Modified</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for m in llm_models %}
+        <tr>
+            <td>{{ m.name }}</td>
+            <td>{{ m.size_display }}</td>
+            <td class="dim">{{ m.parameter_size or '-' }}</td>
+            <td class="dim">{{ m.format or '-' }}</td>
+            <td class="dim">{{ m.modified }}</td>
+            <td>
+                <button onclick="deleteModel('{{ m.name }}')"
+                        style="background:var(--bad); font-size:11px; padding:4px 8px;">
+                    Delete
+                </button>
+            </td>
+        </tr>
+        {% endfor %}
+        {% if not llm_models %}
+        <tr><td colspan="6" class="dim">No LLM models installed</td></tr>
+        {% endif %}
+    </tbody>
+</table>
+
+<div class="section-title" style="display: flex; align-items: center; gap: 8px;">
+    Embedding Models
+    <span class="tag embedding" style="font-size: 10px;">{{ embedding_models | length }}</span>
+</div>
+<table>
+    <thead>
+        <tr>
+            <th>Model</th>
+            <th>Size</th>
+            <th>Params</th>
+            <th>Format</th>
+            <th>Modified</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for m in embedding_models %}
+        <tr>
+            <td>
+                <span class="tag embedding" style="margin-right: 6px; font-size: 9px;">EMB</span>
+                {{ m.name }}
+            </td>
+            <td>{{ m.size_display }}</td>
+            <td class="dim">{{ m.parameter_size or '-' }}</td>
+            <td class="dim">{{ m.format or '-' }}</td>
+            <td class="dim">{{ m.modified }}</td>
+            <td>
+                <button onclick="deleteModel('{{ m.name }}')"
+                        style="background:var(--bad); font-size:11px; padding:4px 8px;">
+                    Delete
+                </button>
+            </td>
+        </tr>
+        {% endfor %}
+        {% if not embedding_models %}
+        <tr><td colspan="6" class="dim">No embedding models installed</td></tr>
+        {% endif %}
+    </tbody>
+</table>

@@ -20,6 +20,7 @@
             <th>Date</th>
             <th>Task</th>
             <th>Type</th>
+            <th>Judge</th>
             <th>Models</th>
             <th>Description</th>
         </tr>
@@ -35,6 +36,15 @@
                 <span class="tag embedding">embedding</span>
                 {% else %}
                 <span class="tag">{{ r.task_type or 'llm' }}</span>
+                {% endif %}
+            </td>
+            <td>
+                {% if r.judge and r.judge.startswith('claude:') %}
+                <span class="tag" style="background:#1a237e;color:#90caf9;">{{ r.judge }}</span>
+                {% elif r.judge %}
+                <span class="tag">{{ r.judge }}</span>
+                {% else %}
+                <span class="dim">—</span>
                 {% endif %}
             </td>
             <td>{{ r.models | join(', ') }}</td>
